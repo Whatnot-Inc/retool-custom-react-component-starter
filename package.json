@@ -1,0 +1,75 @@
+{
+  "name": "retool-custom-react-component-starter",
+  "version": "1.0.0",
+  "description": "A starter template for creating Retool custom React components",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "start": "react-scripts start",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "login": "npx @tryretool/custom-component-support login",
+    "sync": "npx @tryretool/custom-component-support dev",
+    "deploy": "npx @tryretool/custom-component-support deploy",
+    "init": "npx @tryretool/custom-component-support init"
+  },
+  "keywords": [
+    "retool",
+    "custom-component",
+    "react",
+    "starter"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.18.6",
+    "@babel/preset-env": "^7.18.6",
+    "@babel/preset-react": "^7.18.6",
+    "@rollup/plugin-alias": "^5.1.1",
+    "@rollup/plugin-babel": "^5.3.1",
+    "@rollup/plugin-commonjs": "^22.0.1",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@tryretool/custom-component-support": "^1.7.1",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "rollup": "^2.77.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-terser": "^7.0.2"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "retoolCustomComponentLibraryConfig": {
+    "name": "TyTestComponents",
+    "label": "TyTestComponents",
+    "description": "",
+    "entryPoint": "src/index.tsx",
+    "outputPath": "dist"
+  }
+}
