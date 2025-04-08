@@ -1,84 +1,99 @@
 # Retool Custom React Component Starter
 
-This is a starter template for creating custom React components for use in Retool.
+A starter template for creating custom React components for Retool. This project includes a simple counter component that demonstrates how to use Retool's state management.
 
-## Getting Started
+## Features
 
-1.  **Clone or download this repository.**
+- Simple counter component with increment functionality
+- Mock implementation for local development
+- Integration with Retool's state management
 
-2.  **Install dependencies:**
-    ```bash
-    cd retool-custom-react-component-starter
-    npm install
-    ```
+## Development Setup
 
-3.  **Start the development server:**
-    ```bash
-    npm run dev
-    ```
-    This will watch for changes in the `src` directory and rebuild the component automatically.
+### Installation
 
-4.  **Start developing your component:**
-    -   Modify `src/MyComponent.tsx` to create your custom component.
-    -   Add styles to `src/MyComponent.css`.
-    -   If you rename `MyComponent.tsx` or create multiple components, update `src/index.tsx` and `rollup.config.js` accordingly.
+1. Clone this repository
+2. Install dependencies:
+   ```
+   npm install
+   ```
 
-## Building for Retool
+### Local Development
 
-1.  **Build the component:**
-    ```bash
-    npm run build
-    ```
-    This creates the necessary bundled files in the `dist` directory.
+For local development, the project includes a mock implementation of the Retool API:
 
-## Using in Retool
+1. Open `src/MyRetoolComponent.tsx`
+2. Comment out the Retool import and uncomment the mock import:
+   ```typescript
+   // import { Retool } from '@tryretool/custom-component-support';
+   import { Retool } from './mocks/retool';
+   ```
+3. Start the development server:
+   ```
+   npm start
+   ```
 
-1.  **Login to Retool CLI:**
-    ```bash
-    npm run login
-    ```
-    Follow the prompts to log in to your Retool account.
+This allows you to develop and test your component without needing to connect to Retool.
 
-2.  **Sync for development (optional but recommended):**
-    ```bash
-    npm run sync
-    ```
-    This command watches your component files and automatically uploads changes to Retool, allowing for live previews within the Retool editor.
+### Building for Retool
 
-3.  **Deploy the component library:**
-    ```bash
-    npm run deploy
-    ```
-    This command builds your component and uploads the library (defined in `package.json` under `retoolCustomComponentLibraryConfig`) to your Retool instance.
+When you're ready to use your component in Retool:
 
-4.  **Add the component in Retool:**
-    -   Go to your Retool app editor.
-    -   In the component panel on the right, find your custom component library (e.g., "My Custom Components").
-    -   Drag your component (e.g., "My Component") onto the canvas.
+1. Open `src/MyRetoolComponent.tsx`
+2. Uncomment the Retool import and comment out the mock import:
+   ```typescript
+   import { Retool } from '@tryretool/custom-component-support';
+   // import { Retool } from './mocks/retool';
+   ```
+3. Build the component:
+   ```
+   npm run build
+   ```
+4. Deploy to Retool:
+   ```
+   npm run deploy
+   ```
+
+## Available Scripts
+
+- `npm start` - Start the development server
+- `npm run build` - Build the component for production
+- `npm test` - Run tests
+- `npm run login` - Log in to Retool
+- `npm run sync` - Sync changes to Retool during development
+- `npm run deploy` - Deploy the component to Retool
+- `npm run init` - Initialize a new Retool component
 
 ## Project Structure
 
--   `dist/`: Contains the bundled component files ready for Retool.
--   `node_modules/`: Project dependencies.
--   `public/`: Can be used for static assets if needed for local development (e.g., with `npm start`).
--   `src/`: Contains your React component source code.
-    -   `index.tsx`: The main export file for the component library.
-    -   `MyComponent.tsx`: The example starter component.
-    -   `MyComponent.css`: Styles for the example component.
--   `.eslintrc.json`: ESLint configuration.
--   `.gitignore`: Specifies intentionally untracked files that Git should ignore.
--   `.prettierrc`: Prettier code formatting configuration.
--   `css-modules.d.ts`: TypeScript definitions for CSS modules.
--   `package.json`: Project metadata and dependencies.
--   `rollup.config.js`: Rollup configuration for bundling the component.
--   `tsconfig.json`: TypeScript configuration.
+- `src/MyRetoolComponent.tsx` - The main component file
+- `src/MyRetoolComponent.css` - Styles for the component
+- `src/mocks/retool.ts` - Mock implementation of Retool API for local development
+- `src/index.tsx` - Entry point for the component
 
-## Customization
+## Customizing the Component
 
--   **Component Name:** Rename `MyComponent.tsx` and `MyComponent.css`. Update imports in `index.tsx` and `rollup.config.js`.
--   **Multiple Components:**
-    -   Create new `.tsx` and `.css` files for each component in `src/`.
-    -   Export each component from `src/index.tsx`.
-    -   Update `rollup.config.js` to build each component individually for Retool if needed, or adjust the main build target.
-    -   Configure the `components` array within `retoolCustomComponentLibraryConfig` in `package.json` if deploying multiple components within the library.
--   **Library Name:** Update `name`, `label`, and `description` in the `retoolCustomComponentLibraryConfig` section of `package.json`.
+To customize the component:
+
+1. Modify `src/MyRetoolComponent.tsx` to add your own functionality
+2. Update styles in `src/MyRetoolComponent.css`
+3. Add additional state using Retool's state management hooks:
+   - `useStateBoolean`
+   - `useStateNumber`
+   - `useStateString`
+   - `useStateEnumeration`
+   - `useStateObject`
+   - `useStateArray`
+
+## Using Retool State Management
+
+This starter uses Retool's state management through hooks. In the counter example:
+
+```typescript
+const [count, setCountState] = Retool.useStateNumber?.({
+  name: "count",
+  initialValue: 0,
+});
+```
+
+This creates a state variable that is managed by Retool, allowing the state to be accessed and manipulated from the Retool interface.
