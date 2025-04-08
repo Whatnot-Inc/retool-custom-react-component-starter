@@ -4,11 +4,9 @@
   "description": "A starter template for creating Retool custom React components",
   "main": "dist/index.js",
   "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
     "start": "react-scripts start",
+    "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
     "login": "npx @tryretool/custom-component-support login",
     "sync": "npx @tryretool/custom-component-support dev",
     "deploy": "npx @tryretool/custom-component-support deploy",
@@ -35,17 +33,9 @@
     "@babel/core": "^7.18.6",
     "@babel/preset-env": "^7.18.6",
     "@babel/preset-react": "^7.18.6",
-    "@rollup/plugin-alias": "^5.1.1",
-    "@rollup/plugin-babel": "^5.3.1",
-    "@rollup/plugin-commonjs": "^22.0.1",
-    "@rollup/plugin-node-resolve": "^13.3.0",
     "@tryretool/custom-component-support": "^1.7.1",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
-    "rollup": "^2.77.0",
-    "rollup-plugin-peer-deps-external": "^2.2.4",
-    "rollup-plugin-postcss": "^4.0.2",
-    "rollup-plugin-terser": "^7.0.2"
   },
   "eslintConfig": {
     "extends": [
