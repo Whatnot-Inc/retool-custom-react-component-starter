@@ -13,8 +13,8 @@ import './MyRetoolComponent.css';
  * 2. Uncomment the real Retool import line
  */
 
-// import { Retool } from '@tryretool/custom-component-support';
-import { Retool } from './mocks/retool'; 
+import { Retool } from '@tryretool/custom-component-support';
+// import { Retool } from './mocks/retool'; 
 
 const MyRetoolComponent = () => {
   const [count, setCountState] = Retool.useStateNumber?.({
