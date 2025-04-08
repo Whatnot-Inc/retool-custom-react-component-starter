@@ -1,38 +1,26 @@
 import React, { useState } from 'react';
 import './MyRetoolComponent.css';
 
-// Define a type for the Retool interface we need
-interface RetoolInterface {
-  useStateNumber?: (options: {
-    name: string;
-    initialValue: number;
-  }) => [number, (value: number) => void];
-}
+/** 
+ * This is a custom Retool component that uses the Retool API to get the count state.
+ * 
+ * FOR LOCAL DEVELOPMENT WITH `npm run start`:
+ * 1. Comment out the next line (real Retool import)
+ * 2. Uncomment the mock import line below
+ * 
+ * FOR PRODUCTION/DEPLOYMENT TO RETOOL:
+ * 1. Comment out the mock import line
+ * 2. Uncomment the real Retool import line
+ */
 
-// Create a mock Retool object for local development
-const MockRetool: RetoolInterface = { useStateNumber: undefined };
+import { Retool } from '@tryretool/custom-component-support';
+// import { Retool } from './mocks/retool'; 
 
-// Use a global declaration to handle availability of the Retool package
-declare global {
-  interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    _RETOOL_CUSTOM_COMPONENT?: any;
-  }
-}
-
-// Access Retool from window if available, otherwise use mock
-const Retool: RetoolInterface = (
-  typeof window !== 'undefined' && 
-  window._RETOOL_CUSTOM_COMPONENT && 
-  window._RETOOL_CUSTOM_COMPONENT.Retool
-) || MockRetool;
-
-const MyRetoolComponent = (props: any) => {
-  // Direct Retool state bindings - fallback to React's useState if Retool is not available
+const MyRetoolComponent = () => {
   const [count, setCountState] = Retool.useStateNumber?.({
     name: "count",
-    initialValue: props.startCount || 0,
-  }) || useState(props.startCount || 0);
+    initialValue: 0,
+  }) || useState(0);
 
   const handleIncrement = () => {
     setCountState(count + 1);
