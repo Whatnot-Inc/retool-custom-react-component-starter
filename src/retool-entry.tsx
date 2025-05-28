@@ -1,3 +1,3 @@
-import MyRetoolComponent from './MyRetoolComponent';
+import MyRetoolComponent from './MyRetoolComponent'
 
-export default MyRetoolComponent;
+export default MyRetoolComponent

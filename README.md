@@ -26,7 +26,7 @@ For local development, the project includes a mock implementation of the Retool 
 2. Comment out the Retool import and uncomment the mock import:
    ```typescript
    // import { Retool } from '@tryretool/custom-component-support';
-   import { Retool } from './mocks/retool';
+   import { Retool } from './mocks/retool'
    ```
 3. Start the development server:
    ```
@@ -42,7 +42,7 @@ When you're ready to use your component in Retool:
 1. Open `src/MyRetoolComponent.tsx`
 2. Uncomment the Retool import and comment out the mock import:
    ```typescript
-   import { Retool } from '@tryretool/custom-component-support';
+   import { Retool } from '@tryretool/custom-component-support'
    // import { Retool } from './mocks/retool';
    ```
 3. Build the component:
@@ -91,9 +91,9 @@ This starter uses Retool's state management through hooks. In the counter exampl
 
 ```typescript
 const [count, setCountState] = Retool.useStateNumber?.({
-  name: "count",
-  initialValue: 0,
-});
+  name: 'count',
+  initialValue: 0
+})
 ```
 
 This creates a state variable that is managed by Retool, allowing the state to be accessed and manipulated from the Retool interface.

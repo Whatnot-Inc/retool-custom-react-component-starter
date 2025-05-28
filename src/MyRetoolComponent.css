@@ -1,7 +1,14 @@
-
 .my-retool-component-container {
   font-family: 'Consolas', 'Monaco', monospace;
-  background: conic-gradient(from 90deg at 50% 125%, var(--background-start), var(--background-end), var(--primary-color), var(--secondary-color), var(--background-end), var(--background-start));
+  background: conic-gradient(
+    from 90deg at 50% 125%,
+    var(--background-start),
+    var(--background-end),
+    var(--primary-color),
+    var(--secondary-color),
+    var(--background-end),
+    var(--background-start)
+  );
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 40px;
@@ -26,32 +33,45 @@
 .my-retool-component-container::before {
   content: '';
   position: absolute;
-  top: -50%; left: -50%;
-  width: 200%; height: 200%;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0,0,0,0) 0px, rgba(0,0,0,0) 49px,
-    rgba(0,0,0,0.1) 50px, rgba(0,0,0,0.1) 51px
-  ),
-  repeating-linear-gradient(
-    90deg,
-    rgba(0,0,0,0) 0px, rgba(0,0,0,0) 49px,
-    rgba(0,0,0,0.1) 50px, rgba(0,0,0,0.1) 51px
-  );
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0) 0px,
+      rgba(0, 0, 0, 0) 49px,
+      rgba(0, 0, 0, 0.1) 50px,
+      rgba(0, 0, 0, 0.1) 51px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0) 0px,
+      rgba(0, 0, 0, 0) 49px,
+      rgba(0, 0, 0, 0.1) 50px,
+      rgba(0, 0, 0, 0.1) 51px
+    );
   z-index: -1;
   animation: grid-scroll 10s linear infinite;
 }
 
 @keyframes grid-scroll {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(50px, 50px); }
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(50px, 50px);
+  }
 }
 
 .my-retool-component-title {
   font-size: 2.5rem;
   font-weight: bold;
   color: #000000;
-  text-shadow: 0 0 10px rgba(0,0,0,0.5), 0 0 20px var(--secondary-color);
+  text-shadow:
+    0 0 10px rgba(0, 0, 0, 0.5),
+    0 0 20px var(--secondary-color);
   margin-bottom: 20px;
   position: relative;
   z-index: 2;
@@ -80,7 +100,9 @@
   font-weight: bold;
   cursor: pointer;
   overflow: hidden;
-  transition: transform 0.15s ease-out, filter 0.15s ease-out;
+  transition:
+    transform 0.15s ease-out,
+    filter 0.15s ease-out;
 }
 
 .glow-button [data-glow] {
@@ -89,8 +111,7 @@
   border: var(--border-width) solid transparent;
   border-radius: var(--button-radius);
   mask:
-    linear-gradient(transparent, transparent),
-    linear-gradient(white, white);
+    linear-gradient(transparent, transparent), linear-gradient(white, white);
   mask-clip: padding-box, border-box;
   mask-composite: intersect;
   pointer-events: none;
@@ -104,16 +125,16 @@
 }
 
 .glow-button [data-glow]::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 20px;
   height: 40px;
   background: radial-gradient(
-      circle at 50% 50%,
-      var(--glow-color-1),
-      var(--glow-color-2),
-      transparent 70%
-    );
+    circle at 50% 50%,
+    var(--glow-color-1),
+    var(--glow-color-2),
+    transparent 70%
+  );
   filter: blur(5px);
   offset-path: rect(0 100% 100% 0 round var(--button-radius));
   offset-anchor: 50% 50%;
