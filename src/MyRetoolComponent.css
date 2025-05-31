@@ -28,6 +28,10 @@
   --glow-speed: 2.5s;
   --button-radius: 8px;
   --border-width: 2px;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .my-retool-component-container::before {
@@ -66,19 +70,9 @@
 }
 
 .my-retool-component-title {
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: #000000;
-  text-shadow:
-    0 0 10px rgba(0, 0, 0, 0.5),
-    0 0 20px var(--secondary-color);
-  margin-bottom: 20px;
-  position: relative;
-  z-index: 2;
-  padding: 10px;
-  border-radius: 5px;
-  display: inline-block;
-  mix-blend-mode: normal;
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 24px;
 }
 
 .my-retool-component-text {
@@ -155,4 +149,14 @@
 .my-retool-component-button.glow-button:active {
   transform: scale(0.98);
   filter: brightness(0.9);
+}
+
+.graph-container {
+  width: 100%;
+  height: calc(100% - 60px);
+  min-height: 500px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }

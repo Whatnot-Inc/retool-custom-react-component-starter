@@ -26,6 +26,7 @@
     "@testing-library/user-event": "^13.5.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-force-graph-2d": "^1.27.1",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
@@ -56,9 +57,9 @@
     ]
   },
   "retoolCustomComponentLibraryConfig": {
-    "name": "TyTestComponents",
-    "label": "TyTestComponents",
-    "description": "",
+    "name": "DataPortalUtils",
+    "label": "Data Portal Utils",
+    "description": "Data Portal Utils",
     "entryPoint": "src/index.tsx",
     "outputPath": "dist"
   }
