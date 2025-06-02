@@ -2,6 +2,42 @@ import React, { useRef, useEffect, useState } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import './MyRetoolComponent.css';
 
+// Error Boundary Component for catching ForceGraph2D errors
+class ForceGraphErrorBoundary extends React.Component<
+  { children: React.ReactNode; onError: (error: string) => void },
+  { hasError: boolean }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error('ForceGraph2D Error:', error);
+    
+    // Check if this is a DAG cycle error
+    if (error.message && error.message.includes('Invalid DAG structure')) {
+      this.props.onError(error.message);
+    } else {
+      this.props.onError('An error occurred while rendering the graph. Switching to cluster mode.');
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // Reset error state and let parent handle the error
+      this.setState({ hasError: false });
+      return null;
+    }
+
+    return this.props.children;
+  }
+}
+
 /**
  * This is a custom Retool component that uses the Retool API to get the count state.
  *
@@ -30,13 +66,7 @@ interface Edge {
   [key: string]: any;
 }
 
-interface DomainCluster {
-  domain: string;
-  color: string;
-  nodes: Node[];
-  center: { x: number; y: number };
-  radius: number;
-}
+
 
 interface DomainColors {
   background: string;
@@ -268,7 +298,7 @@ const MyRetoolComponent = () => {
   // Force Graph Component State
   const graphRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [domainClusters, setDomainClusters] = useState<DomainCluster[]>([]);
+
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -276,6 +306,7 @@ const MyRetoolComponent = () => {
   const [isTypeOpen, setIsTypeOpen] = useState(false);
   const [clusteringMode, setClusteringMode] = useState<'dag' | 'cluster'>('cluster');
   const [hasCycles, setHasCycles] = useState(false);
+  const [dagError, setDagError] = useState<string | null>(null);
   const [selectedRootNode, setSelectedRootNode] = useState<string>('');
   const [connectionDepth, setConnectionDepth] = useState<number>(2);
   const [showAllNodes, setShowAllNodes] = useState<boolean>(false); // Start in subgraph mode
@@ -295,10 +326,10 @@ const MyRetoolComponent = () => {
     }
   }, [isLoading, nodes.length, edges.length, hasSetDefaultNode]);
 
-  // Detect cycles in the graph using DFS
-  const detectCycles = (nodes: any[], links: any[]) => {
+  // Detect cycles in the graph using DFS and return detailed cycle information
+  const detectCycles = (nodes: any[], links: any[]): { hasCycles: boolean; cyclePath?: string[] } => {
     if (!nodes || nodes.length === 0 || !links || links.length === 0) {
-      return false;
+      return { hasCycles: false };
     }
 
     try {
@@ -315,50 +346,58 @@ const MyRetoolComponent = () => {
         }
       });
 
-      // Build adjacency list from actual data links (not domain clustering links)
+      // Build adjacency list from data links
       links.forEach(link => {
-        if (link && !link.isDomainCluster && link.source && link.target) {
+        if (link && link.source && link.target) {
           // Handle both string IDs and object references
           const sourceId = typeof link.source === 'string' ? link.source : link.source.id;
           const targetId = typeof link.target === 'string' ? link.target : link.target.id;
           
-          if (sourceId && targetId && graph[sourceId] && graph[targetId] !== undefined) {
+          if (sourceId && targetId && sourceId !== targetId && graph[sourceId] !== undefined && graph[targetId] !== undefined) {
+            // Avoid self-loops and ensure both nodes exist
             graph[sourceId].push(targetId);
           }
         }
       });
 
-      // DFS function to detect cycles
-      const dfs = (nodeId: string): boolean => {
-        if (!nodeId || visited[nodeId] === undefined) return false;
+      // DFS function to detect cycles and track path
+      const dfs = (nodeId: string, path: string[]): string[] | null => {
+        if (!nodeId || visited[nodeId] === undefined) return null;
         
         visited[nodeId] = true;
         recStack[nodeId] = true;
+        path.push(nodeId);
 
         for (const neighbor of graph[nodeId] || []) {
-          if (!visited[neighbor] && dfs(neighbor)) {
-            return true;
+          if (!visited[neighbor]) {
+            const cyclePath = dfs(neighbor, [...path]);
+            if (cyclePath) return cyclePath;
           } else if (recStack[neighbor]) {
-            return true;
+            // Found a cycle - return the path from the cycle start
+            const cycleStartIndex = path.indexOf(neighbor);
+            return [...path.slice(cycleStartIndex), neighbor];
           }
         }
 
         recStack[nodeId] = false;
-        return false;
+        return null;
       };
 
       // Check each unvisited node
       for (const nodeId of Object.keys(graph)) {
-        if (!visited[nodeId] && dfs(nodeId)) {
-          return true;
+        if (!visited[nodeId]) {
+          const cyclePath = dfs(nodeId, []);
+          if (cyclePath) {
+            return { hasCycles: true, cyclePath };
+          }
         }
       }
 
-      return false;
+      return { hasCycles: false };
     } catch (error) {
       console.warn('Error during cycle detection:', error);
       // If there's an error in cycle detection, assume there are cycles to be safe
-      return true;
+      return { hasCycles: true };
     }
   };
 
@@ -502,27 +541,7 @@ const MyRetoolComponent = () => {
     }
   }
 
-  // Add virtual links between nodes of the same domain to encourage clustering
-  const domainClusteringLinks: any[] = [];
-  const domainGroups = filteredNodes.reduce((groups, node) => {
-    if (!groups[node.domain]) groups[node.domain] = [];
-    groups[node.domain].push(node);
-    return groups;
-  }, {} as Record<string, Node[]>);
-
-  // Create weak links between nodes in the same domain
-  Object.values(domainGroups).forEach(domainNodes => {
-    for (let i = 0; i < domainNodes.length; i++) {
-      for (let j = i + 1; j < domainNodes.length; j++) {
-        domainClusteringLinks.push({
-          source: domainNodes[i].asset_key,
-          target: domainNodes[j].asset_key,
-          isDomainCluster: true,
-          value: 0.1 // Weak link strength
-        });
-      }
-    }
-  });
+  // No domain clustering - using only real edges
 
   // Create a set of filtered node IDs for fast lookup
   const filteredNodeIds = new Set(filteredNodes.map(node => node.asset_key));
@@ -532,36 +551,29 @@ const MyRetoolComponent = () => {
       id: node.asset_key,
       ...node
     })),
-    links: [
-      ...edges
-        .filter(edge => {
-          // First check if both source and target nodes exist in our filtered set
-          if (!filteredNodeIds.has(edge.source_asset_key) || !filteredNodeIds.has(edge.target_asset_key)) {
-            return false;
-          }
-          
-          const sourceNode = nodes.find(n => n.asset_key === edge.source_asset_key);
-          const targetNode = nodes.find(n => n.asset_key === edge.target_asset_key);
-          if (!sourceNode || !targetNode) return false;
-          
-          const sourceDomainMatch = selectedDomains.length === 0 || selectedDomains.includes(sourceNode.domain);
-          const targetDomainMatch = selectedDomains.length === 0 || selectedDomains.includes(targetNode.domain);
-          const sourceTypeMatch = selectedTypes.length === 0 || selectedTypes.includes(sourceNode.type);
-          const targetTypeMatch = selectedTypes.length === 0 || selectedTypes.includes(targetNode.type);
-          
-          return sourceDomainMatch && targetDomainMatch && sourceTypeMatch && targetTypeMatch;
-        })
-        .map(edge => ({
-          source: edge.source_asset_key,
-          target: edge.target_asset_key,
-          isDomainCluster: false,
-          ...edge
-        })),
-      ...domainClusteringLinks.filter(link => 
-        // Also filter domain clustering links to only include nodes that exist in filtered set
-        filteredNodeIds.has(link.source) && filteredNodeIds.has(link.target)
-      )
-    ]
+    links: edges
+      .filter(edge => {
+        // First check if both source and target nodes exist in our filtered set
+        if (!filteredNodeIds.has(edge.source_asset_key) || !filteredNodeIds.has(edge.target_asset_key)) {
+          return false;
+        }
+        
+        const sourceNode = nodes.find(n => n.asset_key === edge.source_asset_key);
+        const targetNode = nodes.find(n => n.asset_key === edge.target_asset_key);
+        if (!sourceNode || !targetNode) return false;
+        
+        const sourceDomainMatch = selectedDomains.length === 0 || selectedDomains.includes(sourceNode.domain);
+        const targetDomainMatch = selectedDomains.length === 0 || selectedDomains.includes(targetNode.domain);
+        const sourceTypeMatch = selectedTypes.length === 0 || selectedTypes.includes(sourceNode.type);
+        const targetTypeMatch = selectedTypes.length === 0 || selectedTypes.includes(targetNode.type);
+        
+        return sourceDomainMatch && targetDomainMatch && sourceTypeMatch && targetTypeMatch;
+      })
+      .map(edge => ({
+        source: edge.source_asset_key,
+        target: edge.target_asset_key,
+        ...edge
+      }))
   };
 
   // Validate graph data integrity
@@ -583,38 +595,34 @@ const MyRetoolComponent = () => {
   // Ensure all links reference valid nodes
   graphData.links = validateGraphData(graphData.nodes, graphData.links);
 
-  // Check for cycles immediately after creating graph data
-  const currentHasCycles = detectCycles(graphData.nodes, graphData.links);
+  // Check for cycles in the graph data
+  console.log(`Graph data: ${graphData.nodes.length} nodes, ${graphData.links.length} edges`);
   
-  // Update hasCycles state if it's different
+  const cycleDetectionResult = detectCycles(graphData.nodes, graphData.links);
+  const currentHasCycles = cycleDetectionResult.hasCycles;
+  
+  // Update hasCycles state and error message if it's different
   useEffect(() => {
     if (currentHasCycles !== hasCycles) {
       setHasCycles(currentHasCycles);
+      
+      // Set error message if cycles are detected
+      if (currentHasCycles && cycleDetectionResult.cyclePath) {
+        const cyclePathStr = cycleDetectionResult.cyclePath.join(' → ');
+        setDagError(`Invalid DAG structure! Found cycle: ${cyclePathStr}`);
+        // Force cluster mode when cycles are detected
+        setClusteringMode('cluster');
+      } else {
+        setDagError(null);
+      }
     }
-  }, [currentHasCycles, hasCycles]);
+  }, [currentHasCycles, hasCycles, cycleDetectionResult.cyclePath]);
 
   // Force cluster mode if cycles are detected
-  const safeDagMode = clusteringMode === 'dag' && !currentHasCycles ? 'lr' : undefined;
+  // Always use undefined (cluster mode) if there are any cycles or if not explicitly in DAG mode
+  const safeDagMode = clusteringMode === 'dag' && !currentHasCycles && graphData.nodes.length > 0 ? 'lr' : undefined;
 
-  // Group nodes by domain
-  useEffect(() => {
-    const clusters = nodes.reduce((clusters: DomainCluster[], node) => {
-      const existingCluster = clusters.find(c => c.domain === node.domain);
-      if (existingCluster) {
-        existingCluster.nodes.push(node);
-      } else {
-        clusters.push({
-          domain: node.domain,
-          color: getDomainColors(node.domain).background,
-          nodes: [node],
-          center: { x: 0, y: 0 },
-          radius: 0
-        });
-      }
-      return clusters;
-    }, []);
-    setDomainClusters(clusters);
-  }, [nodes]);
+
 
   const getDomainColors = (domain: string): DomainColors => {
     return domainColors[domain] || domainColors.default;
@@ -631,9 +639,6 @@ const MyRetoolComponent = () => {
 
 
   const getLinkColor = (link: any) => {
-    // Hide domain clustering links (make them transparent)
-    if (link.isDomainCluster) return 'rgba(0,0,0,0)';
-    
     const sourceNode = graphData.nodes.find(n => n.id === link.source);
     const targetNode = graphData.nodes.find(n => n.id === link.target);
     return sourceNode?.domain !== targetNode?.domain ? '#FFD93D' : '#999';
@@ -645,6 +650,13 @@ const MyRetoolComponent = () => {
 
   const handleBackgroundClick = () => {
     setSelectedNode(null);
+  };
+
+  const handleForceGraphError = (errorMessage: string) => {
+    console.error('Force graph error:', errorMessage);
+    setDagError(errorMessage);
+    setClusteringMode('cluster');
+    setHasCycles(true);
   };
 
   const toggleDomain = (domain: string) => {
@@ -688,6 +700,19 @@ const MyRetoolComponent = () => {
       <h1 className="my-retool-component-title">Force Graph Visualization</h1>
       <div className="graph-container">
         <div ref={containerRef} className="force-graph-container">
+          {dagError && (
+            <div className="dag-error-banner">
+              <span className="error-icon">⚠️</span>
+              <span className="error-message">{dagError}</span>
+              <button 
+                className="error-dismiss"
+                onClick={() => setDagError(null)}
+                title="Dismiss error"
+              >
+                ×
+              </button>
+            </div>
+          )}
           <div className="graph-controls">
             <div className="dropdown-filter">
               <button 
@@ -763,20 +788,27 @@ const MyRetoolComponent = () => {
                 className="dropdown-button"
                 onClick={() => {
                   if (!currentHasCycles) {
-                    setClusteringMode(clusteringMode === 'dag' ? 'cluster' : 'dag');
+                    const newMode = clusteringMode === 'dag' ? 'cluster' : 'dag';
+                    setClusteringMode(newMode);
+                    // Clear error when switching to cluster mode
+                    if (newMode === 'cluster') {
+                      setDagError(null);
+                    }
                   } else {
-                    console.warn('Cannot switch to DAG mode: cycles detected in graph');
+                    // Automatically switch to cluster mode when cycles are detected
+                    setClusteringMode('cluster');
+                    setDagError(null);
+                    console.log('Switched to cluster mode due to cycles in graph');
                   }
                 }}
-                disabled={currentHasCycles}
                 style={{
-                  opacity: currentHasCycles ? 0.6 : 1,
-                  cursor: currentHasCycles ? 'not-allowed' : 'pointer'
+                  opacity: currentHasCycles && clusteringMode === 'dag' ? 0.6 : 1,
+                  cursor: 'pointer'
                 }}
               >
                 <span>
-                  Layout: {clusteringMode === 'dag' ? 'Hierarchical (DAG)' : 'Domain Clustering'}
-                  {currentHasCycles && ' (Cycles detected - DAG disabled)'}
+                  Layout: {clusteringMode === 'dag' ? 'Hierarchical (DAG)' : 'Force Layout'}
+                  {currentHasCycles && clusteringMode === 'dag' && ' (Cycles detected)'}
                 </span>
               </button>
             </div>
@@ -827,32 +859,25 @@ const MyRetoolComponent = () => {
               )}
             </div>
           </div>
-          <ForceGraph2D
-            ref={graphRef}
-            graphData={graphData}
-            nodeId="id"
-            nodeLabel="asset_key"
-            nodeColor={getNodeColor}
-            linkColor={getLinkColor}
-            linkWidth={2}
-            linkDirectionalArrowLength={6}
-            linkDirectionalArrowRelPos={1}
-            dagMode={safeDagMode}
-            dagLevelDistance={safeDagMode ? 60 : undefined}
-            onNodeClick={handleNodeClick}
-            onBackgroundClick={handleBackgroundClick}
-            onRenderFramePre={(ctx: CanvasRenderingContext2D) => {
-              if (!ctx) return;
-              
-              // Draw domain backgrounds
-              domainClusters.forEach(cluster => {
-                ctx.beginPath();
-                ctx.arc(cluster.center.x, cluster.center.y, cluster.radius, 0, 2 * Math.PI);
-                ctx.fillStyle = cluster.color;
-                ctx.fill();
-              });
-            }}
-          />
+          <ForceGraphErrorBoundary onError={handleForceGraphError}>
+            <ForceGraph2D
+              key={`force-graph-${clusteringMode}-${currentHasCycles}`}
+              ref={graphRef}
+              graphData={graphData}
+              nodeId="id"
+              nodeLabel="asset_key"
+              nodeColor={getNodeColor}
+              linkColor={getLinkColor}
+              linkWidth={2}
+              linkDirectionalArrowLength={6}
+              linkDirectionalArrowRelPos={1}
+              dagMode={safeDagMode}
+              dagLevelDistance={safeDagMode ? 60 : undefined}
+              onNodeClick={handleNodeClick}
+              onBackgroundClick={handleBackgroundClick}
+
+            />
+          </ForceGraphErrorBoundary>
           {selectedNode && (
             <div className="node-details-panel">
               <div className="node-details-content">
