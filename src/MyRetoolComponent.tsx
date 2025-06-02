@@ -44,13 +44,34 @@ interface DomainColors {
 }
 
 const domainColors: Record<string, DomainColors> = {
-  ecommerce: {
-    background: 'rgba(78, 205, 196, 0.2)', // Teal with transparency
+  growth: {
+    background: 'rgba(78, 205, 196, 0.2)', // Teal
     node: '#4ECDC4'
   },
-  analytics: {
-    background: 'rgba(255, 107, 107, 0.2)', // Red with transparency
+  data_platforms: {
+    background: 'rgba(255, 107, 107, 0.2)', // Red
     node: '#FF6B6B'
+  },
+  unknown: {
+    background: 'rgba(128, 128, 128, 0.2)', // Gray
+    node: '#808080'
+  },
+  // Additional domains found in the data
+  chalk: {
+    background: 'rgba(156, 39, 176, 0.2)', // Purple
+    node: '#9C27B0'
+  },
+  annoy: {
+    background: 'rgba(255, 193, 7, 0.2)', // Amber
+    node: '#FFC107'
+  },
+  chalk_monitoring: {
+    background: 'rgba(244, 67, 54, 0.2)', // Red variant
+    node: '#F44336'
+  },
+  chalk_feature_datasets: {
+    background: 'rgba(63, 81, 181, 0.2)', // Indigo
+    node: '#3F51B5'
   },
   default: {
     background: 'rgba(31, 119, 180, 0.2)', // Blue with transparency
@@ -58,73 +79,191 @@ const domainColors: Record<string, DomainColors> = {
   }
 };
 
-// Sample data for initial display
-const sampleNodes: Node[] = [
-  // E-commerce Domain
+// CSV Loading Functions
+const parseCSV = (csvText: string): string[][] => {
+  const lines = csvText.trim().split('\n');
+  return lines.map(line => {
+    const row: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"' && (i === 0 || line[i - 1] === ',')) {
+        inQuotes = true;
+      } else if (char === '"' && inQuotes && (i === line.length - 1 || line[i + 1] === ',')) {
+        inQuotes = false;
+      } else if (char === ',' && !inQuotes) {
+        row.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    row.push(current.trim());
+    return row;
+  });
+};
+
+const loadCSVData = async (): Promise<{ nodes: Node[], edges: Edge[] }> => {
+  try {
+    console.log('Starting CSV data load...');
+    const [nodesResponse, edgesResponse] = await Promise.all([
+      fetch('/data/nodes.csv'),
+      fetch('/data/edges.csv')
+    ]);
+
+    console.log('CSV fetch responses:', { 
+      nodesOk: nodesResponse.ok, 
+      edgesOk: edgesResponse.ok,
+      nodesStatus: nodesResponse.status,
+      edgesStatus: edgesResponse.status
+    });
+
+    if (!nodesResponse.ok || !edgesResponse.ok) {
+      throw new Error(`Failed to load CSV files: nodes=${nodesResponse.status}, edges=${edgesResponse.status}`);
+    }
+
+    const [nodesText, edgesText] = await Promise.all([
+      nodesResponse.text(),
+      edgesResponse.text()
+    ]);
+
+    // Parse nodes CSV
+    const nodeRows = parseCSV(nodesText);
+    const nodeHeaders = nodeRows[0];
+    const nodeData = nodeRows.slice(1);
+    
+    console.log('Node headers:', nodeHeaders);
+    console.log('First few node rows:', nodeData.slice(0, 3));
+
+    const nodes: Node[] = nodeData.map(row => {
+      const node: any = {};
+      nodeHeaders.forEach((header, index) => {
+        node[header.toLowerCase()] = row[index] || '';
+      });
+      
+      return {
+        asset_key: node.asset_key || '',
+        domain: node.domain || 'unknown',
+        type: node.resource_type || 'unknown',
+        asset_group: node.asset_group || '',
+        service_tier: node.service_tier || ''
+      };
+    }).filter(node => node.asset_key); // Filter out empty nodes
+    
+    console.log(`Parsed ${nodes.length} nodes from ${nodeData.length} rows`);
+
+    // Parse edges CSV
+    const edgeRows = parseCSV(edgesText);
+    const edgeHeaders = edgeRows[0];
+    const edgeData = edgeRows.slice(1);
+    
+    console.log('Edge headers:', edgeHeaders);
+    console.log('First few edge rows:', edgeData.slice(0, 3));
+
+    const edges: Edge[] = edgeData.map(row => {
+      const edge: any = {};
+      edgeHeaders.forEach((header, index) => {
+        edge[header.toLowerCase()] = row[index] || '';
+      });
+      
+      return {
+        source_asset_key: edge.source_asset_key || '',
+        target_asset_key: edge.target_asset_key || ''
+      };
+    }).filter(edge => edge.source_asset_key && edge.target_asset_key); // Filter out empty edges
+    
+    console.log(`Parsed ${edges.length} edges from ${edgeData.length} rows`);
+
+    return { nodes, edges };
+  } catch (error) {
+    console.error('Error loading CSV data:', error);
+    // Return empty data on error
+    return { nodes: [], edges: [] };
+  }
+};
+
+// Fallback sample data (kept for development/testing)
+const fallbackNodes: Node[] = [
   { asset_key: "users_table", domain: "ecommerce", type: "table" },
   { asset_key: "orders_table", domain: "ecommerce", type: "table" },
   { asset_key: "products_table", domain: "ecommerce", type: "table" },
   { asset_key: "user_service", domain: "ecommerce", type: "service" },
   { asset_key: "order_service", domain: "ecommerce", type: "service" },
-  { asset_key: "product_service", domain: "ecommerce", type: "service" },
-  { asset_key: "user_api", domain: "ecommerce", type: "endpoint" },
-  { asset_key: "order_api", domain: "ecommerce", type: "endpoint" },
-  { asset_key: "product_api", domain: "ecommerce", type: "endpoint" },
-  { asset_key: "ecommerce_frontend", domain: "ecommerce", type: "application" },
-
-  // Analytics Domain
   { asset_key: "analytics_db", domain: "analytics", type: "table" },
-  { asset_key: "metrics_table", domain: "analytics", type: "table" },
-  { asset_key: "analytics_service", domain: "analytics", type: "service" },
-  { asset_key: "metrics_service", domain: "analytics", type: "service" },
-  { asset_key: "analytics_api", domain: "analytics", type: "endpoint" },
-  { asset_key: "metrics_api", domain: "analytics", type: "endpoint" },
-  { asset_key: "analytics_dashboard", domain: "analytics", type: "application" }
+  { asset_key: "analytics_service", domain: "analytics", type: "service" }
 ];
 
-const sampleEdges: Edge[] = [
-  // E-commerce Domain Internal Connections
-  { source_asset_key: "ecommerce_frontend", target_asset_key: "user_api" },
-  { source_asset_key: "ecommerce_frontend", target_asset_key: "order_api" },
-  { source_asset_key: "ecommerce_frontend", target_asset_key: "product_api" },
-  { source_asset_key: "user_api", target_asset_key: "user_service" },
-  { source_asset_key: "order_api", target_asset_key: "order_service" },
-  { source_asset_key: "product_api", target_asset_key: "product_service" },
+const fallbackEdges: Edge[] = [
   { source_asset_key: "user_service", target_asset_key: "users_table" },
   { source_asset_key: "order_service", target_asset_key: "orders_table" },
-  { source_asset_key: "product_service", target_asset_key: "products_table" },
-  { source_asset_key: "order_service", target_asset_key: "users_table" },
   { source_asset_key: "order_service", target_asset_key: "products_table" },
-
-  // Analytics Domain Internal Connections
-  { source_asset_key: "analytics_dashboard", target_asset_key: "analytics_api" },
-  { source_asset_key: "analytics_dashboard", target_asset_key: "metrics_api" },
-  { source_asset_key: "analytics_api", target_asset_key: "analytics_service" },
-  { source_asset_key: "metrics_api", target_asset_key: "metrics_service" },
+  { source_asset_key: "order_service", target_asset_key: "users_table" },
   { source_asset_key: "analytics_service", target_asset_key: "analytics_db" },
-  { source_asset_key: "metrics_service", target_asset_key: "metrics_table" },
-
-  // Cross-Domain Connections
-  { source_asset_key: "order_service", target_asset_key: "analytics_service" },
-  { source_asset_key: "product_service", target_asset_key: "metrics_service" },
-  { source_asset_key: "analytics_service", target_asset_key: "users_table" },
-  { source_asset_key: "metrics_service", target_asset_key: "products_table" }
+  { source_asset_key: "order_service", target_asset_key: "analytics_service" }
 ];
 
 const MyRetoolComponent = () => {
+  // State for loading CSV data
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadedNodes, setLoadedNodes] = useState<Node[]>(fallbackNodes);
+  const [loadedEdges, setLoadedEdges] = useState<Edge[]>(fallbackEdges);
+
+  // Load CSV data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const { nodes, edges } = await loadCSVData();
+        console.log(`Loaded ${nodes.length} nodes and ${edges.length} edges from CSV`);
+        if (nodes.length > 0 && edges.length > 0) {
+          setLoadedNodes(nodes);
+          setLoadedEdges(edges);
+          console.log('Successfully set loaded nodes and edges');
+        } else {
+          console.warn('CSV data was empty, using fallback data');
+        }
+      } catch (error) {
+        console.error('Failed to load CSV data, using fallback:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Use loaded CSV data directly, with Retool state as override capability
   const [nodesState] = Retool.useStateArray({
     name: 'nodes',
-    initialValue: sampleNodes
-  }) || [sampleNodes];
+    initialValue: []
+  }) || [[]];
 
   const [edgesState] = Retool.useStateArray({
     name: 'edges',
-    initialValue: sampleEdges
-  }) || [sampleEdges];
+    initialValue: []
+  }) || [[]];
 
-  // Type assertion to convert the SerializableArray to our specific types
-  const nodes = nodesState as unknown as Node[];
-  const edges = edgesState as unknown as Edge[];
+  // Use CSV loaded data if available, otherwise fall back to Retool state
+  const nodes = (nodesState as unknown as Node[]).length > 0 
+    ? (nodesState as unknown as Node[]) 
+    : loadedNodes;
+  
+  const edges = (edgesState as unknown as Edge[]).length > 0 
+    ? (edgesState as unknown as Edge[]) 
+    : loadedEdges;
+
+  // Debug logging
+  console.log('Final data being used:', { 
+    nodeCount: nodes.length, 
+    edgeCount: edges.length,
+    isLoading,
+    retoolNodesLength: (nodesState as unknown as Node[]).length,
+    loadedNodesLength: loadedNodes.length
+  });
 
   // Force Graph Component State
   const graphRef = useRef<any>(null);
@@ -137,6 +276,24 @@ const MyRetoolComponent = () => {
   const [isTypeOpen, setIsTypeOpen] = useState(false);
   const [clusteringMode, setClusteringMode] = useState<'dag' | 'cluster'>('cluster');
   const [hasCycles, setHasCycles] = useState(false);
+  const [selectedRootNode, setSelectedRootNode] = useState<string>('');
+  const [connectionDepth, setConnectionDepth] = useState<number>(2);
+  const [showAllNodes, setShowAllNodes] = useState<boolean>(false); // Start in subgraph mode
+  const [hasSetDefaultNode, setHasSetDefaultNode] = useState<boolean>(false);
+  const [isNodeSearchOpen, setIsNodeSearchOpen] = useState(false);
+  const [nodeSearchTerm, setNodeSearchTerm] = useState<string>('');
+
+  // Auto-select a good default node when data loads
+  useEffect(() => {
+    if (!isLoading && nodes.length > 0 && edges.length > 0 && !hasSetDefaultNode) {
+      const defaultNode = findBestDefaultNode(nodes, edges);
+      if (defaultNode) {
+        setSelectedRootNode(defaultNode);
+        setHasSetDefaultNode(true);
+        console.log(`Auto-selected default node: ${defaultNode}`);
+      }
+    }
+  }, [isLoading, nodes.length, edges.length, hasSetDefaultNode]);
 
   // Detect cycles in the graph using DFS
   const detectCycles = (nodes: any[], links: any[]) => {
@@ -205,16 +362,145 @@ const MyRetoolComponent = () => {
     }
   };
 
+  // Function to find the best default node (highly connected, interesting name)
+  const findBestDefaultNode = (allNodes: Node[], allEdges: Edge[]): string | null => {
+    if (allNodes.length === 0) return null;
+    
+    // Calculate connection counts for each node
+    const connectionCounts = new Map<string, number>();
+    allNodes.forEach(node => connectionCounts.set(node.asset_key, 0));
+    
+    allEdges.forEach(edge => {
+      connectionCounts.set(edge.source_asset_key, (connectionCounts.get(edge.source_asset_key) || 0) + 1);
+      connectionCounts.set(edge.target_asset_key, (connectionCounts.get(edge.target_asset_key) || 0) + 1);
+    });
+    
+    // Find interesting nodes with good connectivity
+    const candidates = allNodes.filter(node => {
+      const connections = connectionCounts.get(node.asset_key) || 0;
+      return connections >= 3; // At least 3 connections
+    });
+    
+    if (candidates.length === 0) {
+      // Fallback to most connected node
+      let maxConnections = 0;
+      let bestNode = allNodes[0].asset_key;
+      
+      for (const [nodeId, connections] of connectionCounts.entries()) {
+        if (connections > maxConnections) {
+          maxConnections = connections;
+          bestNode = nodeId;
+        }
+      }
+      return bestNode;
+    }
+    
+    // Prefer nodes with interesting patterns in their names
+    const interestingPatterns = [
+      /database/i,
+      /table/i,
+      /service/i,
+      /api/i,
+      /events/i,
+      /user/i,
+      /order/i,
+      /core/i,
+      /main/i
+    ];
+    
+    for (const pattern of interestingPatterns) {
+      const matches = candidates.filter(node => pattern.test(node.asset_key));
+      if (matches.length > 0) {
+        // Return the most connected among matches
+        return matches.reduce((best, current) => {
+          const bestConnections = connectionCounts.get(best.asset_key) || 0;
+          const currentConnections = connectionCounts.get(current.asset_key) || 0;
+          return currentConnections > bestConnections ? current : best;
+        }).asset_key;
+      }
+    }
+    
+    // Fallback to most connected candidate
+    return candidates.reduce((best, current) => {
+      const bestConnections = connectionCounts.get(best.asset_key) || 0;
+      const currentConnections = connectionCounts.get(current.asset_key) || 0;
+      return currentConnections > bestConnections ? current : best;
+    }).asset_key;
+  };
+
+  // Function to find connected nodes within specified depth
+  const findConnectedNodes = (rootNodeId: string, depth: number, allNodes: Node[], allEdges: Edge[]): Set<string> => {
+    if (!rootNodeId || depth <= 0) return new Set();
+    
+    const connectedNodes = new Set<string>([rootNodeId]);
+    const visited = new Set<string>();
+    
+    // Build adjacency map (bidirectional)
+    const adjacencyMap = new Map<string, Set<string>>();
+    allEdges.forEach(edge => {
+      if (!adjacencyMap.has(edge.source_asset_key)) {
+        adjacencyMap.set(edge.source_asset_key, new Set());
+      }
+      if (!adjacencyMap.has(edge.target_asset_key)) {
+        adjacencyMap.set(edge.target_asset_key, new Set());
+      }
+      
+      adjacencyMap.get(edge.source_asset_key)!.add(edge.target_asset_key);
+      adjacencyMap.get(edge.target_asset_key)!.add(edge.source_asset_key);
+    });
+    
+    // BFS to find nodes within depth
+    let currentLevel = [rootNodeId];
+    let currentDepth = 0;
+    
+    while (currentLevel.length > 0 && currentDepth < depth) {
+      const nextLevel: string[] = [];
+      
+      for (const nodeId of currentLevel) {
+        if (visited.has(nodeId)) continue;
+        visited.add(nodeId);
+        
+        const neighbors = adjacencyMap.get(nodeId) || new Set();
+        for (const neighbor of neighbors) {
+          if (!connectedNodes.has(neighbor)) {
+            connectedNodes.add(neighbor);
+            nextLevel.push(neighbor);
+          }
+        }
+      }
+      
+      currentLevel = nextLevel;
+      currentDepth++;
+    }
+    
+    return connectedNodes;
+  };
+
   // Get unique domains and types for the filters
   const domains = [...new Set(nodes.map(node => node.domain))];
   const types = [...new Set(nodes.map(node => node.type))];
 
   // Transform the data for the force graph
-  const filteredNodes = nodes.filter(node => {
+  let filteredNodes = nodes.filter(node => {
     const domainMatch = selectedDomains.length === 0 || selectedDomains.includes(node.domain);
     const typeMatch = selectedTypes.length === 0 || selectedTypes.includes(node.type);
     return domainMatch && typeMatch;
   });
+
+  // Apply subgraph filtering if a root node is selected
+  if (!showAllNodes && selectedRootNode) {
+    // Check if the selected root node exists in the current nodes
+    const rootNodeExists = nodes.some(node => node.asset_key === selectedRootNode);
+    if (!rootNodeExists) {
+      console.warn(`Selected root node ${selectedRootNode} not found in current nodes, clearing selection`);
+      setSelectedRootNode('');
+    } else {
+      const connectedNodeIds = findConnectedNodes(selectedRootNode, connectionDepth, nodes, edges);
+      const beforeCount = filteredNodes.length;
+      filteredNodes = filteredNodes.filter(node => connectedNodeIds.has(node.asset_key));
+      console.log(`Subgraph filter: ${beforeCount} → ${filteredNodes.length} nodes connected to ${selectedRootNode} within ${connectionDepth} hops`);
+    }
+  }
 
   // Add virtual links between nodes of the same domain to encourage clustering
   const domainClusteringLinks: any[] = [];
@@ -238,6 +524,9 @@ const MyRetoolComponent = () => {
     }
   });
 
+  // Create a set of filtered node IDs for fast lookup
+  const filteredNodeIds = new Set(filteredNodes.map(node => node.asset_key));
+
   const graphData = {
     nodes: filteredNodes.map(node => ({
       id: node.asset_key,
@@ -246,6 +535,11 @@ const MyRetoolComponent = () => {
     links: [
       ...edges
         .filter(edge => {
+          // First check if both source and target nodes exist in our filtered set
+          if (!filteredNodeIds.has(edge.source_asset_key) || !filteredNodeIds.has(edge.target_asset_key)) {
+            return false;
+          }
+          
           const sourceNode = nodes.find(n => n.asset_key === edge.source_asset_key);
           const targetNode = nodes.find(n => n.asset_key === edge.target_asset_key);
           if (!sourceNode || !targetNode) return false;
@@ -263,9 +557,31 @@ const MyRetoolComponent = () => {
           isDomainCluster: false,
           ...edge
         })),
-      ...domainClusteringLinks
+      ...domainClusteringLinks.filter(link => 
+        // Also filter domain clustering links to only include nodes that exist in filtered set
+        filteredNodeIds.has(link.source) && filteredNodeIds.has(link.target)
+      )
     ]
   };
+
+  // Validate graph data integrity
+  const validateGraphData = (nodes: any[], links: any[]) => {
+    const nodeIds = new Set(nodes.map(n => n.id));
+    const invalidLinks = links.filter(link => 
+      !nodeIds.has(link.source) || !nodeIds.has(link.target)
+    );
+    
+    if (invalidLinks.length > 0) {
+      console.warn(`Found ${invalidLinks.length} invalid links:`, invalidLinks.slice(0, 5));
+      // Return filtered links
+      return links.filter(link => nodeIds.has(link.source) && nodeIds.has(link.target));
+    }
+    
+    return links;
+  };
+
+  // Ensure all links reference valid nodes
+  graphData.links = validateGraphData(graphData.nodes, graphData.links);
 
   // Check for cycles immediately after creating graph data
   const currentHasCycles = detectCycles(graphData.nodes, graphData.links);
@@ -305,14 +621,14 @@ const MyRetoolComponent = () => {
   };
 
   const getNodeColor = (node: any) => {
+    // Highlight the root node if in subgraph mode
+    if (!showAllNodes && selectedRootNode && node.id === selectedRootNode) {
+      return '#FF4444'; // Red highlight for root node
+    }
     return getDomainColors(node.domain).node;
   };
 
-  const getNodeVal = (node: any) => {
-    // Nodes in the same domain get higher values to cluster together
-    const domainNodeCount = nodes.filter(n => n.domain === node.domain).length;
-    return Math.max(1, domainNodeCount / 10); // Scale based on domain size
-  };
+
 
   const getLinkColor = (link: any) => {
     // Hide domain clustering links (make them transparent)
@@ -353,12 +669,95 @@ const MyRetoolComponent = () => {
     return `${items.length} selected`;
   };
 
+  if (isLoading) {
+    return (
+      <div className="my-retool-component my-retool-component-container">
+        <h1 className="my-retool-component-title">Force Graph Visualization</h1>
+        <div className="graph-container">
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading graph data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="my-retool-component my-retool-component-container">
       <h1 className="my-retool-component-title">Force Graph Visualization</h1>
       <div className="graph-container">
         <div ref={containerRef} className="force-graph-container">
           <div className="graph-controls">
+            <div className="dropdown-filter">
+              <button 
+                className="dropdown-button"
+                onClick={() => setShowAllNodes(!showAllNodes)}
+                style={{
+                  backgroundColor: showAllNodes ? 'white' : '#4ECDC4',
+                  color: showAllNodes ? '#333' : 'white'
+                }}
+              >
+                <span>{showAllNodes ? 'Show All Nodes' : 'Show Subgraph'}</span>
+              </button>
+            </div>
+            
+            {!showAllNodes && (
+              <>
+                <div className="dropdown-filter">
+                  <button 
+                    className="dropdown-button"
+                    onClick={() => setIsNodeSearchOpen(!isNodeSearchOpen)}
+                  >
+                    <span>Root: {selectedRootNode || 'Select Node'}</span>
+                    <span className="dropdown-arrow">▼</span>
+                  </button>
+                  {isNodeSearchOpen && (
+                    <div className="dropdown-content node-search-dropdown">
+                      <input
+                        type="text"
+                        placeholder="Search nodes..."
+                        value={nodeSearchTerm}
+                        onChange={(e) => setNodeSearchTerm(e.target.value)}
+                        className="node-search-input"
+                        autoFocus
+                      />
+                      <div className="node-search-results">
+                        {nodes
+                          .filter(node => 
+                            node.asset_key.toLowerCase().includes(nodeSearchTerm.toLowerCase())
+                          )
+                          .slice(0, 20)
+                          .map(node => (
+                            <div
+                              key={node.asset_key}
+                              className="node-search-item"
+                              onClick={() => {
+                                setSelectedRootNode(node.asset_key);
+                                setIsNodeSearchOpen(false);
+                                setNodeSearchTerm('');
+                              }}
+                            >
+                              <div className="node-search-name">{node.asset_key}</div>
+                              <div className="node-search-meta">{node.domain} • {node.type}</div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="dropdown-filter">
+                  <button 
+                    className="dropdown-button"
+                    onClick={() => setConnectionDepth(connectionDepth === 1 ? 2 : connectionDepth === 2 ? 3 : 1)}
+                  >
+                    <span>Depth: {connectionDepth}</span>
+                  </button>
+                </div>
+              </>
+            )}
+            
             <div className="dropdown-filter">
               <button 
                 className="dropdown-button"
@@ -434,7 +833,6 @@ const MyRetoolComponent = () => {
             nodeId="id"
             nodeLabel="asset_key"
             nodeColor={getNodeColor}
-            nodeVal={getNodeVal}
             linkColor={getLinkColor}
             linkWidth={2}
             linkDirectionalArrowLength={6}
