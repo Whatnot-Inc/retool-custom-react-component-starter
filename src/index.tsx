@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { ComparisonExpressionOperator, CompoundExpressionOperator, Expression, ExpressionType } from './rule-selection/types'
-import ExpressionContainer from './rule-selection/Components'
+import ExpressionContainer, { ComparisonExpressionComponent } from './rule-selection/Components'
 
 // Export the component for use as a module
 export { default as MyRetoolComponent } from './MyRetoolComponent'
@@ -28,13 +28,22 @@ const TestCompoundExpression2: Expression = {
 // For development
 if (document.getElementById('root')) {
   const root = ReactDOM.createRoot(document.getElementById('root')!)
+  const mode = "edit"
   root.render(
     <React.StrictMode>
-      <ExpressionContainer
-        mode="view"
-        expression={TestCompoundExpression2}
-        onExpressionChange={(newExpression) => console.log(newExpression)}
-      />
+      <div>
+        <ComparisonExpressionComponent
+          mode={mode}
+          expression={TestExpression}
+          onExpressionChange={(newExpression) => console.log(newExpression)}
+          signalNames={["test", "test2", "test3"]}
+        />
+        <ExpressionContainer
+          mode={mode}
+          expression={TestCompoundExpression2}
+          onExpressionChange={(newExpression) => console.log(newExpression)}
+        />
+      </div>
     </React.StrictMode>
   )
 }

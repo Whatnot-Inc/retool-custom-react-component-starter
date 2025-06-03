@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ComparisonExpressionOperator, CompoundExpressionOperator, Expression, ExpressionType } from './types'
+import { ComparisonExpression, ComparisonExpressionOperator, CompoundExpressionOperator, Expression, ExpressionType } from './types'
 
 // ExpressionComponent
 
@@ -85,6 +85,88 @@ const ExpressionComponent: React.FC<ExpressionComponentProps> = (
     }
 }
 
+// ComparisonExpressionComponent
+
+interface ComparisonExpressionComponentProps {
+    mode: "edit" | "view"
+    expression: ComparisonExpression
+    onExpressionChange: (newExpression: ComparisonExpression) => void
+    signalNames: string[]
+}
+
+const ComparisonExpressionComponent: React.FC<ComparisonExpressionComponentProps> = (
+    { mode, expression, onExpressionChange, signalNames }
+) => {
+    const [currentExpression, setCurrentExpression] = useState<ComparisonExpression>(expression)
+    const handleSignalChange = (newSignalName: string) => {
+        setCurrentExpression({
+            ...currentExpression,
+            signalName: newSignalName
+        })
+        onExpressionChange(currentExpression)
+    }
+    const handleOperatorChange = (newOperator: ComparisonExpressionOperator) => {
+        setCurrentExpression({
+            ...currentExpression,
+            operator: newOperator
+        })
+        onExpressionChange(currentExpression)
+    }
+    const handleValueChange = (newValue: string) => {
+        setCurrentExpression({
+            ...currentExpression,
+            value: newValue
+        })
+        onExpressionChange(currentExpression)
+    }
+
+    let internal = null;
+    if (mode === "view") {
+        internal = (
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div>{expression.signalName} {expression.operator} {expression.value}</div>
+            </div>
+        )
+    } else {
+        internal = (
+            <div>
+                <p>Comparison Expression</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <select 
+                        value={currentExpression.signalName} 
+                        onChange={(e) => handleSignalChange(e.target.value)}
+                    >
+                        {signalNames.map((signalName) => (
+                            <option value={signalName} key={signalName}>{signalName}</option>
+                        ))}
+                    </select>
+                    
+                    <select 
+                        value={currentExpression.operator} 
+                        onChange={(e) => handleOperatorChange(e.target.value as ComparisonExpressionOperator)}
+                    >
+                        {Object.values(ComparisonExpressionOperator).map((op) => (
+                            <option value={op} key={op}>{op}</option>
+                        ))}
+                    </select>
+                    
+                    <input 
+                        type="text" 
+                        value={currentExpression.value.toString()} 
+                        onChange={(e) => handleValueChange(e.target.value)}
+                        placeholder="Enter value"
+                    />
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div>
+            {internal}
+        </div>
+    )
+}
 
 // AddExpressionMenu
 
@@ -148,3 +230,4 @@ const ExpressionContainer: React.FC<ExpressionContainerProps> = (
 }
 
 export default ExpressionContainer;
+export { ComparisonExpressionComponent };
