@@ -31,7 +31,7 @@ if (document.getElementById('root')) {
   root.render(
     <React.StrictMode>
       <ExpressionContainer
-        mode="edit"
+        mode="view"
         expression={TestCompoundExpression2}
         onExpressionChange={(newExpression) => console.log(newExpression)}
       />

@@ -7,10 +7,11 @@ interface ExpressionComponentProps {
     expression: Expression
     mode: "edit" | "view"
     onExpressionChange: (newExpression: Expression) => void
+    onDelete?: () => void
 }
 
 const ExpressionComponent: React.FC<ExpressionComponentProps> = (
-    { expression, mode, onExpressionChange }
+    { expression, mode, onExpressionChange, onDelete }
 ) => {
     const [isAddingExpression, setIsAddingExpression] = useState(false)
 
@@ -39,37 +40,38 @@ const ExpressionComponent: React.FC<ExpressionComponentProps> = (
         })
     }
 
-    const TestExpression: Expression = {
-        type: ExpressionType.COMPARISON,
-        signalName: "test",
-        operator: ComparisonExpressionOperator.EQUALS,
-        value: "test",
-    }
-
     if (expression.type === ExpressionType.COMPARISON) {
-        return <div>{expression.signalName} {expression.operator} {expression.value}</div>
+        return (
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div>{expression.signalName} {expression.operator} {expression.value}</div>
+                {mode === "edit" && onDelete && <AddDeleteButton onClick={onDelete} mode="delete" />}
+            </div>
+        )
     } else {
         return (
             <div>
-                {mode === "edit" ? (
-                    <select>
-                        {Object.values(CompoundExpressionOperator).map((op) => (
-                            <option value={op} key={op}>{op}</option>
-                        ))}
-                    </select>
-                ) : (
-                    <div>{expression.operator}</div>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                    {mode === "edit" ? (
+                        <select>
+                            {Object.values(CompoundExpressionOperator).map((op) => (
+                                <option value={op} key={op}>{op}</option>
+                            ))}
+                        </select>
+                    ) : (
+                        <div>{expression.operator}</div>
+                    )}
+                    {mode === "edit" && onDelete && <AddDeleteButton onClick={onDelete} mode="delete" />}
+                </div>
                 
                 <div style={{ marginLeft: '20px' }}>
                     {expression.expressions.map((e, index) => (
-                        <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
+                        <div key={index}>
                             <ExpressionComponent 
                                 expression={e} 
                                 mode={mode} 
-                                onExpressionChange={(newExpr) => handleChildExpressionChange(index, newExpr)} 
+                                onExpressionChange={(newExpr) => handleChildExpressionChange(index, newExpr)}
+                                onDelete={() => deleteExpression(index)}
                             />
-                            {mode === "edit" && <AddDeleteButton onClick={() => deleteExpression(index)} mode="delete" />}
                         </div>
                     ))}
                     {mode === "edit" && !isAddingExpression && <AddDeleteButton onClick={() => setIsAddingExpression(true)} mode="add" />}
@@ -100,7 +102,7 @@ const AddExpressionMenu: React.FC<AddExpressionMenuProps> = ({ onExpressionAdded
     const testCompoundExpression: Expression = {
         type: ExpressionType.COMPOUND,
         operator: CompoundExpressionOperator.AND,
-        expressions: [testComparisonExpression],
+        expressions: [],
     }
     return (
         <div>
