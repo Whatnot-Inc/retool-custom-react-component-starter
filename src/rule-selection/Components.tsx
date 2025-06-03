@@ -12,6 +12,8 @@ interface ExpressionComponentProps {
 const ExpressionComponent: React.FC<ExpressionComponentProps> = (
     { expression, mode, onExpressionChange }
 ) => {
+    const [isAddingExpression, setIsAddingExpression] = useState(false)
+
     const addExpression = (newExpression: Expression) => {
         if (mode === "view") return
         if (expression.type === ExpressionType.COMPARISON) return
@@ -70,11 +72,42 @@ const ExpressionComponent: React.FC<ExpressionComponentProps> = (
                             {mode === "edit" && <AddDeleteButton onClick={() => deleteExpression(index)} mode="delete" />}
                         </div>
                     ))}
-                    {mode === "edit" && <AddDeleteButton onClick={() => addExpression(TestExpression)} mode="add" />}
+                    {mode === "edit" && !isAddingExpression && <AddDeleteButton onClick={() => setIsAddingExpression(true)} mode="add" />}
                 </div>
+                {isAddingExpression && <AddExpressionMenu onExpressionAdded={(newExpression) => {
+                    addExpression(newExpression)
+                    setIsAddingExpression(false)
+                }} />}
             </div>
         )
     }
+}
+
+
+// AddExpressionMenu
+
+interface AddExpressionMenuProps {
+    onExpressionAdded: (newExpression: Expression) => void
+}
+
+const AddExpressionMenu: React.FC<AddExpressionMenuProps> = ({ onExpressionAdded }) => {
+    const testComparisonExpression: Expression = {
+        type: ExpressionType.COMPARISON,
+        signalName: "test",
+        operator: ComparisonExpressionOperator.EQUALS,
+        value: "test",
+    }
+    const testCompoundExpression: Expression = {
+        type: ExpressionType.COMPOUND,
+        operator: CompoundExpressionOperator.AND,
+        expressions: [testComparisonExpression],
+    }
+    return (
+        <div>
+            <button onClick={() => onExpressionAdded(testComparisonExpression)}>Add Comparison Expression</button>
+            <button onClick={() => onExpressionAdded(testCompoundExpression)}>Add Compound Expression</button>
+        </div>
+    )
 }
 
 // AddDeleteButton
