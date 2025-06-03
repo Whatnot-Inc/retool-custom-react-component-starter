@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { ComparisonExpressionOperator, CompoundExpressionOperator, Expression, ExpressionType } from './rule-selection/types'
-import ExpressionComponent from './rule-selection/ExpressionComponent'
+import ExpressionContainer from './rule-selection/Components'
 
 // Export the component for use as a module
 export { default as MyRetoolComponent } from './MyRetoolComponent'
@@ -16,7 +16,7 @@ const TestExpression: Expression = {
 const TestCompoundExpression: Expression = {
   type: ExpressionType.COMPOUND,
   operator: CompoundExpressionOperator.AND,
-  expressions: [TestExpression],
+  expressions: [TestExpression, TestExpression],
 }
 
 const TestCompoundExpression2: Expression = {
@@ -30,7 +30,11 @@ if (document.getElementById('root')) {
   const root = ReactDOM.createRoot(document.getElementById('root')!)
   root.render(
     <React.StrictMode>
-      <ExpressionComponent expression={TestCompoundExpression2} />
+      <ExpressionContainer
+        mode="edit"
+        expression={TestCompoundExpression2}
+        onExpressionChange={(newExpression) => console.log(newExpression)}
+      />
     </React.StrictMode>
   )
 }
