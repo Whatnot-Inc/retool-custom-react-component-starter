@@ -8,11 +8,20 @@ interface ExpressionComponentProps {
     mode: "edit" | "view"
     onExpressionChange: (newExpression: Expression) => void
     onDelete?: () => void
+    onComparisonExpressionSelected?: (comparisonExpression: ComparisonExpression, path: string) => void
+    selectedComparisonExpressionAndPath?: {comparisonExpression: ComparisonExpression, path: string} | null
+    path: string
 }
 
-const ExpressionComponent: React.FC<ExpressionComponentProps> = (
-    { expression, mode, onExpressionChange, onDelete }
-) => {
+const ExpressionComponent: React.FC<ExpressionComponentProps> = ({
+    expression,
+    mode,
+    onExpressionChange,
+    onDelete,
+    onComparisonExpressionSelected,
+    selectedComparisonExpressionAndPath,
+    path
+}) => {
     const [isAddingExpression, setIsAddingExpression] = useState(false)
 
     const addExpression = (newExpression: Expression) => {
@@ -40,49 +49,105 @@ const ExpressionComponent: React.FC<ExpressionComponentProps> = (
         })
     }
 
+    // Style constants
+    const comparisonExpressionStyles = {
+        display: 'flex',
+        alignItems: 'center',
+        backgroundColor: selectedComparisonExpressionAndPath?.path === path ? 'blue' : 'white',
+        cursor: 'pointer',
+        padding: '4px 8px',
+        borderRadius: '4px'
+    }
+    const compoundHeaderStyles = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        marginBottom: '10px'
+    }
+    const nestedExpressionsStyles = {
+        marginLeft: '20px'
+    }
+
+    const handleComparisonClick = () => {
+        if (expression.type === ExpressionType.COMPARISON) {
+            onComparisonExpressionSelected?.(expression as ComparisonExpression, path)
+        }
+    }
+    const handleOperatorChange = (newOperator: CompoundExpressionOperator) => {
+        if (expression.type === ExpressionType.COMPOUND) {
+            onExpressionChange({
+                ...expression,
+                operator: newOperator
+            })
+        }
+    }
+    const handleAddExpressionComplete = (newExpression: Expression) => {
+        addExpression(newExpression)
+        setIsAddingExpression(false)
+    }
+
     if (expression.type === ExpressionType.COMPARISON) {
         return (
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div>{expression.signalName} {expression.operator} {expression.value}</div>
-                {mode === "edit" && onDelete && <AddDeleteButton onClick={onDelete} mode="delete" />}
-            </div>
-        )
-    } else {
-        return (
-            <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                    {mode === "edit" ? (
-                        <select>
-                            {Object.values(CompoundExpressionOperator).map((op) => (
-                                <option value={op} key={op}>{op}</option>
-                            ))}
-                        </select>
-                    ) : (
-                        <div>{expression.operator}</div>
-                    )}
-                    {mode === "edit" && onDelete && <AddDeleteButton onClick={onDelete} mode="delete" />}
+            <div style={comparisonExpressionStyles} onClick={handleComparisonClick}>
+                <div>
+                    {expression.signalName} {expression.operator} {expression.value}
                 </div>
-                
-                <div style={{ marginLeft: '20px' }}>
-                    {expression.expressions.map((e, index) => (
-                        <div key={index}>
-                            <ExpressionComponent 
-                                expression={e} 
-                                mode={mode} 
-                                onExpressionChange={(newExpr) => handleChildExpressionChange(index, newExpr)}
-                                onDelete={() => deleteExpression(index)}
-                            />
-                        </div>
-                    ))}
-                    {mode === "edit" && !isAddingExpression && <AddDeleteButton onClick={() => setIsAddingExpression(true)} mode="add" />}
-                </div>
-                {isAddingExpression && <AddExpressionMenu onExpressionAdded={(newExpression) => {
-                    addExpression(newExpression)
-                    setIsAddingExpression(false)
-                }} />}
+                {mode === "edit" && onDelete && (
+                    <AddDeleteButton onClick={onDelete} mode="delete" />
+                )}
             </div>
         )
     }
+
+    return (
+        <div>
+            <div style={compoundHeaderStyles}>
+                {mode === "edit" ? (
+                    <select 
+                        value={expression.operator} 
+                        onChange={(e) => handleOperatorChange(e.target.value as CompoundExpressionOperator)}
+                    >
+                        {Object.values(CompoundExpressionOperator).map((op) => (
+                            <option value={op} key={op}>
+                                {op}
+                            </option>
+                        ))}
+                    </select>
+                ) : (
+                    <div>{expression.operator}</div>
+                )}
+                {mode === "edit" && onDelete && (
+                    <AddDeleteButton onClick={onDelete} mode="delete" />
+                )}
+            </div>
+            
+            <div style={nestedExpressionsStyles}>
+                {expression.expressions.map((e, index) => (
+                    <div key={index}>
+                        <ExpressionComponent 
+                            expression={e} 
+                            mode={mode} 
+                            onExpressionChange={(newExpr) => handleChildExpressionChange(index, newExpr)}
+                            onDelete={() => deleteExpression(index)}
+                            path={`${path}.${index}`}
+                            selectedComparisonExpressionAndPath={selectedComparisonExpressionAndPath}
+                            onComparisonExpressionSelected={onComparisonExpressionSelected}
+                        />
+                    </div>
+                ))}
+                {mode === "edit" && !isAddingExpression && (
+                    <AddDeleteButton 
+                        onClick={() => setIsAddingExpression(true)} 
+                        mode="add" 
+                    />
+                )}
+            </div>
+            
+            {isAddingExpression && (
+                <AddExpressionMenu onExpressionAdded={handleAddExpressionComplete} />
+            )}
+        </div>
+    )
 }
 
 // ComparisonExpressionComponent
@@ -94,68 +159,49 @@ interface ComparisonExpressionComponentProps {
     signalNames: string[]
 }
 
-const ComparisonExpressionComponent: React.FC<ComparisonExpressionComponentProps> = (
-    { mode, expression, onExpressionChange, signalNames }
-) => {
-    const [currentExpression, setCurrentExpression] = useState<ComparisonExpression>(expression)
-    const handleSignalChange = (newSignalName: string) => {
-        setCurrentExpression({
-            ...currentExpression,
-            signalName: newSignalName
-        })
-        onExpressionChange(currentExpression)
+const ComparisonExpressionComponent: React.FC<ComparisonExpressionComponentProps> = ({
+    mode,
+    expression,
+    onExpressionChange,
+    signalNames
+}) => {
+    const viewStyles = {
+        display: 'flex',
+        alignItems: 'center'
     }
-    const handleOperatorChange = (newOperator: ComparisonExpressionOperator) => {
-        setCurrentExpression({
-            ...currentExpression,
-            operator: newOperator
-        })
-        onExpressionChange(currentExpression)
-    }
-    const handleValueChange = (newValue: string) => {
-        setCurrentExpression({
-            ...currentExpression,
-            value: newValue
-        })
-        onExpressionChange(currentExpression)
+    const editContainerStyles = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
     }
 
-    let internal = null;
+    const handleSignalChange = (newSignalName: string) => {
+        const updatedExpression = {
+            ...expression,
+            signalName: newSignalName
+        }
+        onExpressionChange(updatedExpression)
+    }
+    const handleOperatorChange = (newOperator: ComparisonExpressionOperator) => {
+        const updatedExpression = {
+            ...expression,
+            operator: newOperator
+        }
+        onExpressionChange(updatedExpression)
+    }
+    const handleValueChange = (newValue: string) => {
+        const updatedExpression = {
+            ...expression,
+            value: newValue
+        }
+        onExpressionChange(updatedExpression)
+    }
+
     if (mode === "view") {
-        internal = (
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div>{expression.signalName} {expression.operator} {expression.value}</div>
-            </div>
-        )
-    } else {
-        internal = (
-            <div>
-                <p>Comparison Expression</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <select 
-                        value={currentExpression.signalName} 
-                        onChange={(e) => handleSignalChange(e.target.value)}
-                    >
-                        {signalNames.map((signalName) => (
-                            <option value={signalName} key={signalName}>{signalName}</option>
-                        ))}
-                    </select>
-                    
-                    <select 
-                        value={currentExpression.operator} 
-                        onChange={(e) => handleOperatorChange(e.target.value as ComparisonExpressionOperator)}
-                    >
-                        {Object.values(ComparisonExpressionOperator).map((op) => (
-                            <option value={op} key={op}>{op}</option>
-                        ))}
-                    </select>
-                    
-                    <input 
-                        type="text" 
-                        value={currentExpression.value.toString()} 
-                        onChange={(e) => handleValueChange(e.target.value)}
-                        placeholder="Enter value"
-                    />
+        return (
+            <div style={viewStyles}>
+                <div>
+                    {expression.signalName} {expression.operator} {expression.value}
                 </div>
             </div>
         )
@@ -163,7 +209,37 @@ const ComparisonExpressionComponent: React.FC<ComparisonExpressionComponentProps
 
     return (
         <div>
-            {internal}
+            <p>Comparison Expression</p>
+            <div style={editContainerStyles}>
+                <select 
+                    value={expression.signalName} 
+                    onChange={(e) => handleSignalChange(e.target.value)}
+                >
+                    {signalNames.map((signalName) => (
+                        <option value={signalName} key={signalName}>
+                            {signalName}
+                        </option>
+                    ))}
+                </select>
+                
+                <select 
+                    value={expression.operator} 
+                    onChange={(e) => handleOperatorChange(e.target.value as ComparisonExpressionOperator)}
+                >
+                    {Object.values(ComparisonExpressionOperator).map((op) => (
+                        <option value={op} key={op}>
+                            {op}
+                        </option>
+                    ))}
+                </select>
+                
+                <input 
+                    type="text" 
+                    value={expression.value.toString()} 
+                    onChange={(e) => handleValueChange(e.target.value)}
+                    placeholder="Enter value"
+                />
+            </div>
         </div>
     )
 }
@@ -217,6 +293,8 @@ const ExpressionContainer: React.FC<ExpressionContainerProps> = (
     { mode, expression, onExpressionChange }
 ) => {
     const [currentExpression, setCurrentExpression] = useState<Expression>(expression)
+    const [selectedComparisonExpressionAndPath, setSelectedComparisonExpressionAndPath] = useState<{comparisonExpression: ComparisonExpression, path: string} | null>(null)
+
     const handleExpressionChange = (newExpression: Expression) => {
         setCurrentExpression(newExpression)
         onExpressionChange(newExpression)
@@ -224,7 +302,14 @@ const ExpressionContainer: React.FC<ExpressionContainerProps> = (
 
     return (
         <div>
-            <ExpressionComponent expression={currentExpression} mode={mode} onExpressionChange={handleExpressionChange} />
+            <ExpressionComponent
+                expression={currentExpression}
+                mode={mode}
+                onExpressionChange={handleExpressionChange}
+                onComparisonExpressionSelected={(comparisonExpression, path) => setSelectedComparisonExpressionAndPath({comparisonExpression, path})} 
+                selectedComparisonExpressionAndPath={selectedComparisonExpressionAndPath}
+                path=""
+            />
         </div>
     )
 }
