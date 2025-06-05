@@ -56,9 +56,9 @@
     ]
   },
   "retoolCustomComponentLibraryConfig": {
-    "name": "TyTestComponents",
-    "label": "TyTestComponents",
-    "description": "",
+    "name": "CamComponents",
+    "label": "Cam Components",
+    "description": "A library of Cam's components",
     "entryPoint": "src/index.tsx",
     "outputPath": "dist"
   }

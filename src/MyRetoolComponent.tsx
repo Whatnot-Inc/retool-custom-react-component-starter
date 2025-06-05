@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import './MyRetoolComponent.css'
 
 /**
@@ -13,8 +13,8 @@ import './MyRetoolComponent.css'
  * 2. Uncomment the real Retool import line
  */
 
-// import { Retool } from '@tryretool/custom-component-support';
-import { Retool } from './mocks/retool'
+import { Retool } from '@tryretool/custom-component-support';
+// import { Retool } from './mocks/retool'
 
 const MyRetoolComponent = () => {
   const [count, setCountState] =
@@ -22,6 +22,20 @@ const MyRetoolComponent = () => {
       name: 'count',
       initialValue: 0
     }) || useState(0)
+
+  const runQuery = Retool.useEventCallback?.({
+    name: 'incrementQuery',
+  }) || (() => { console.log('runQuery') });
+
+  const [returnedData, _] = Retool.useStateObject?.({
+    name: 'returnedData',
+  }) || [null, () => { console.log('returnedData set') }]
+
+  const returnedDataRef = useRef(returnedData)
+
+  useEffect(() => {
+    returnedDataRef.current = returnedData
+  }, [returnedData]);
 
   const handleIncrement = () => {
     setCountState(count + 1)
@@ -38,6 +52,21 @@ const MyRetoolComponent = () => {
         <span data-glow aria-hidden="true"></span>
         Increment
       </button>
+      <button
+        className="my-retool-component-button glow-button"
+        onClick={() => {
+            runQuery()
+            setTimeout(() => {
+                console.log('Returned data:', returnedDataRef.current)
+            }, 1000)
+        }}
+      >
+        <span data-glow aria-hidden="true"></span>
+        Run Query
+      </button>
+      <p>
+          {JSON.stringify(returnedDataRef.current, null, 2)}
+      </p>
     </div>
   )
 }
