@@ -1,5 +1,7 @@
 # Retool Custom React Component Starter
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A starter template for creating custom React components for Retool using TypeScript and React. This project includes a simple counter component that demonstrates how to use Retool's state management and event handling.
 
 ## What
@@ -306,3 +308,8 @@ The flow is:
 
 - [Retool Custom Component Libraries Documentation](https://docs.retool.com/apps/guides/custom/custom-component-libraries/)
 - [Retool Custom Component API Reference](https://docs.retool.com/apps/guides/custom/custom-component-api)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
