@@ -1,16 +1,23 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import MyRetoolComponent from './MyRetoolComponent';
+import React from 'react'
+import ReactDOM from 'react-dom/client'
 
-// Export the component for use as a module
-export { default as MyRetoolComponent } from './MyRetoolComponent';
+import {
+  BrandVerificationReviewDashboardView
+} from './BrandVerificationReviewDashboard'
+import { sampleApplications } from './sampleApplications'
 
-// For development
-if (document.getElementById('root')) {
-  const root = ReactDOM.createRoot(document.getElementById('root')!);
-  root.render(
+export { BrandVerificationReviewDashboardView }
+
+const rootElement = document.getElementById('root')
+
+if (rootElement) {
+  ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-      <MyRetoolComponent />
+      <BrandVerificationReviewDashboardView
+        allowedReviewer
+        applications={sampleApplications}
+        onDecision={(decision) => console.info('Review decision', decision)}
+      />
     </React.StrictMode>
-  );
+  )
 }
