@@ -1,7 +1,7 @@
 {
-  "name": "retool-custom-react-component-starter",
+  "name": "brand-verification-review-dashboard",
   "version": "1.0.0",
-  "description": "A starter template for creating Retool custom React components",
+  "description": "Restricted Admin2 dashboard for reviewing brand verification applications",
   "main": "dist/index.js",
   "scripts": {
     "start": "react-scripts start",
@@ -57,10 +57,10 @@
     ]
   },
   "retoolCustomComponentLibraryConfig": {
-    "name": "TyTestComponents",
-    "label": "TyTestComponents",
-    "description": "",
-    "entryPoint": "src/index.tsx",
+    "name": "BrandVerificationReview",
+    "label": "Brand Verification Review",
+    "description": "Manual reviewer dashboard for brand verification applications",
+    "entryPoint": "src/retool-entry.tsx",
     "outputPath": "dist"
   }
 }

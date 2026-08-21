@@ -1,3 +1,1 @@
-import MyRetoolComponent from './MyRetoolComponent'
-
-export default MyRetoolComponent
+export { BrandVerificationReviewDashboard as default } from './RetoolBrandVerificationReviewDashboard'
