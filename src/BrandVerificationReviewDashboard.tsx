@@ -1,4 +1,4 @@
-import React, { FC, useMemo, useState } from 'react'
+import React, { FC, useEffect, useMemo, useRef, useState } from 'react'
 
 import './MyRetoolComponent.css'
 import {
@@ -25,7 +25,9 @@ const formatMaskedTaxId = (taxIdLastFour: string): string =>
 const safeExternalUrl = (value: string): string | null => {
   try {
     const url = new URL(value)
-    return url.protocol === 'http:' || url.protocol === 'https:' ? value : null
+    return url.protocol === 'http:' || url.protocol === 'https:'
+      ? url.href
+      : null
   } catch {
     return null
   }
@@ -49,13 +51,19 @@ const StatusBadge: FC<{ status: ApplicationStatus }> = ({ status }) => (
   </span>
 )
 
-const EmptyState: FC = () => (
+const EmptyState: FC<{ hasApplications: boolean }> = ({ hasApplications }) => (
   <section className="empty-state">
     <div className="empty-state__icon" aria-hidden="true">
       ✓
     </div>
-    <h2>No applications to review</h2>
-    <p>New brand verification submissions will appear here.</p>
+    <h2>
+      {hasApplications ? 'No matching applications' : 'No applications to review'}
+    </h2>
+    <p>
+      {hasApplications
+        ? 'Try another search or status filter.'
+        : 'New brand verification submissions will appear here.'}
+    </p>
   </section>
 )
 
@@ -71,6 +79,45 @@ export const BrandVerificationReviewDashboardView: FC<DashboardProps> = ({
   const [reason, setReason] = useState('')
   const [submittedDecision, setSubmittedDecision] =
     useState<ReviewDecision | null>(null)
+  const modalRef = useRef<HTMLElement>(null)
+  const decisionTriggerRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!decision) return
+
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setDecision(null)
+        return
+      }
+
+      if (event.key !== 'Tab' || !modalRef.current) return
+      const focusableElements = Array.from(
+        modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), textarea:not(:disabled), [href], [tabindex]:not([tabindex="-1"])'
+        )
+      )
+      const firstElement = focusableElements[0]
+      const lastElement = focusableElements[focusableElements.length - 1]
+      if (!firstElement || !lastElement) return
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault()
+        lastElement.focus()
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault()
+        firstElement.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      decisionTriggerRef.current?.focus()
+      decisionTriggerRef.current = null
+    }
+  }, [decision])
 
   const counts = useMemo(
     () => ({
@@ -97,9 +144,8 @@ export const BrandVerificationReviewDashboardView: FC<DashboardProps> = ({
   }, [applications, search, statusFilter])
 
   const selectedApplication =
-    applications.find(({ id }) => id === selectedId) ??
-    filteredApplications[0] ??
-    applications[0]
+    filteredApplications.find(({ id }) => id === selectedId) ??
+    filteredApplications[0]
   const selectedWebsiteUrl = selectedApplication
     ? safeExternalUrl(selectedApplication.business.website)
     : null
@@ -113,6 +159,7 @@ export const BrandVerificationReviewDashboardView: FC<DashboardProps> = ({
   }
 
   const openDecision = (nextDecision: 'approve' | 'reject'): void => {
+    decisionTriggerRef.current = document.activeElement as HTMLElement | null
     setReason('')
     setDecision(nextDecision)
   }
@@ -188,14 +235,13 @@ export const BrandVerificationReviewDashboardView: FC<DashboardProps> = ({
             />
           </label>
 
-          <div className="status-tabs" role="tablist" aria-label="Status filter">
+          <div className="status-tabs" role="group" aria-label="Status filter">
             {(['pending', 'approved', 'rejected'] as const).map((status) => (
               <button
-                aria-selected={statusFilter === status}
+                aria-pressed={statusFilter === status}
                 className={statusFilter === status ? 'is-active' : ''}
                 key={status}
                 onClick={() => selectStatus(status)}
-                role="tab"
                 type="button"
               >
                 {status === 'pending' ? 'Pending' : statusLabels[status]}
@@ -207,6 +253,7 @@ export const BrandVerificationReviewDashboardView: FC<DashboardProps> = ({
           <div className="application-list">
             {filteredApplications.map((application) => (
               <button
+                aria-pressed={selectedApplication?.id === application.id}
                 className={`application-row ${
                   selectedApplication?.id === application.id ? 'is-selected' : ''
                 }`}
@@ -296,11 +343,15 @@ export const BrandVerificationReviewDashboardView: FC<DashboardProps> = ({
                     <dd>
                       {selectedWebsiteUrl ? (
                         <a
+                          aria-label={`Open ${selectedApplication.business.brandName} website in a new tab`}
                           href={selectedWebsiteUrl}
                           rel="noreferrer"
                           target="_blank"
                         >
-                          {selectedWebsiteUrl.replace(/^https?:\/\//, '')}
+                          {selectedApplication.business.website.replace(
+                            /^https?:\/\//,
+                            ''
+                          )}
                           <span aria-hidden="true"> ↗</span>
                         </a>
                       ) : (
@@ -408,7 +459,7 @@ export const BrandVerificationReviewDashboardView: FC<DashboardProps> = ({
             )}
           </section>
         ) : (
-          <EmptyState />
+          <EmptyState hasApplications={applications.length > 0} />
         )}
       </div>
 
@@ -418,10 +469,11 @@ export const BrandVerificationReviewDashboardView: FC<DashboardProps> = ({
             aria-labelledby="decision-title"
             aria-modal="true"
             className="decision-modal"
+            ref={modalRef}
             role="dialog"
           >
             <button
-              aria-label="Close"
+              aria-label="Close decision dialog"
               className="modal-close"
               onClick={() => setDecision(null)}
               type="button"

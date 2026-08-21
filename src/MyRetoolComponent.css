@@ -8,6 +8,10 @@
 * { box-sizing: border-box; }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(93, 61, 245, .35);
+  outline-offset: 2px;
+}
 
 .review-dashboard {
   --ink: #19191f;
@@ -331,4 +335,8 @@ button { cursor: pointer; }
   .field-grid, .eligibility-grid { grid-template-columns: 1fr; }
   .decision-bar__actions { width: 100%; }
   .decision-bar__actions .button { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button { transition: none; }
 }

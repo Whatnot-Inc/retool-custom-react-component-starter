@@ -13,7 +13,6 @@ export type BrandVerificationApplication = {
   seller: {
     userId: string
     username: string
-    avatarUrl?: string
     aggregateRating: number
     activeSevereViolations: number
   }
@@ -38,8 +37,23 @@ export type ReviewDecision = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
+const hasOnlyKeys = (
+  value: Record<string, unknown>,
+  allowedKeys: readonly string[]
+): boolean => {
+  const allowed = new Set(allowedKeys)
+  return Object.keys(value).every((key) => allowed.has(key))
+}
+
 const isApplicationStatus = (value: unknown): value is ApplicationStatus =>
   value === 'pending' || value === 'approved' || value === 'rejected'
+
+const isEligibilitySignal = (value: unknown): value is EligibilitySignal =>
+  isRecord(value) &&
+  hasOnlyKeys(value, ['label', 'detail', 'passed']) &&
+  typeof value.label === 'string' &&
+  typeof value.detail === 'string' &&
+  typeof value.passed === 'boolean'
 
 const isSafeWebsite = (value: string): boolean => {
   try {
@@ -55,39 +69,91 @@ export const readApplications = (
 ): BrandVerificationApplication[] => {
   if (!isRecord(value) || !Array.isArray(value.items)) return []
 
-  return value.items.filter(
-    (item): item is BrandVerificationApplication =>
-      isRecord(item) &&
-      typeof item.id === 'string' &&
-      isApplicationStatus(item.status) &&
-      typeof item.submittedAt === 'string' &&
-      !Number.isNaN(Date.parse(item.submittedAt)) &&
-      isRecord(item.seller) &&
-      typeof item.seller.userId === 'string' &&
-      typeof item.seller.username === 'string' &&
-      (item.seller.avatarUrl === undefined ||
-        typeof item.seller.avatarUrl === 'string') &&
-      typeof item.seller.aggregateRating === 'number' &&
-      Number.isFinite(item.seller.aggregateRating) &&
-      typeof item.seller.activeSevereViolations === 'number' &&
-      Number.isFinite(item.seller.activeSevereViolations) &&
-      isRecord(item.business) &&
-      typeof item.business.brandName === 'string' &&
-      typeof item.business.legalBusinessName === 'string' &&
-      typeof item.business.legalAddress === 'string' &&
-      typeof item.business.website === 'string' &&
-      isSafeWebsite(item.business.website) &&
-      typeof item.business.taxIdLastFour === 'string' &&
-      /^\d{4}$/.test(item.business.taxIdLastFour) &&
-      typeof item.business.trademarkNumber === 'string' &&
-      typeof item.business.annualRevenue === 'string' &&
-      Array.isArray(item.eligibility) &&
-      item.eligibility.every(
-        (signal) =>
-          isRecord(signal) &&
-          typeof signal.label === 'string' &&
-          typeof signal.detail === 'string' &&
-          typeof signal.passed === 'boolean'
-      )
-  )
+  return value.items.flatMap((item): BrandVerificationApplication[] => {
+    if (
+      !isRecord(item) ||
+      !hasOnlyKeys(item, [
+        'id',
+        'status',
+        'submittedAt',
+        'seller',
+        'business',
+        'eligibility'
+      ]) ||
+      typeof item.id !== 'string' ||
+      !isApplicationStatus(item.status) ||
+      typeof item.submittedAt !== 'string' ||
+      Number.isNaN(Date.parse(item.submittedAt)) ||
+      !isRecord(item.seller) ||
+      !isRecord(item.business) ||
+      !Array.isArray(item.eligibility)
+    ) {
+      return []
+    }
+
+    const { seller, business, eligibility } = item
+    if (
+      !hasOnlyKeys(seller, [
+        'userId',
+        'username',
+        'aggregateRating',
+        'activeSevereViolations'
+      ]) ||
+      typeof seller.userId !== 'string' ||
+      typeof seller.username !== 'string' ||
+      typeof seller.aggregateRating !== 'number' ||
+      !Number.isFinite(seller.aggregateRating) ||
+      typeof seller.activeSevereViolations !== 'number' ||
+      !Number.isFinite(seller.activeSevereViolations) ||
+      !hasOnlyKeys(business, [
+        'brandName',
+        'legalBusinessName',
+        'legalAddress',
+        'website',
+        'taxIdLastFour',
+        'trademarkNumber',
+        'annualRevenue'
+      ]) ||
+      typeof business.brandName !== 'string' ||
+      typeof business.legalBusinessName !== 'string' ||
+      typeof business.legalAddress !== 'string' ||
+      typeof business.website !== 'string' ||
+      !isSafeWebsite(business.website) ||
+      typeof business.taxIdLastFour !== 'string' ||
+      !/^\d{4}$/.test(business.taxIdLastFour) ||
+      typeof business.trademarkNumber !== 'string' ||
+      typeof business.annualRevenue !== 'string' ||
+      !eligibility.every(isEligibilitySignal)
+    ) {
+      return []
+    }
+
+    return [
+      {
+        id: item.id,
+        status: item.status,
+        submittedAt: item.submittedAt,
+        seller: {
+          userId: seller.userId,
+          username: seller.username,
+          aggregateRating: seller.aggregateRating,
+          activeSevereViolations: seller.activeSevereViolations
+        },
+        business: {
+          brandName: business.brandName,
+          legalBusinessName: business.legalBusinessName,
+          legalAddress: business.legalAddress,
+          website: business.website,
+          taxIdLastFour: business.taxIdLastFour,
+          trademarkNumber: business.trademarkNumber,
+          annualRevenue: business.annualRevenue
+        },
+        eligibility: eligibility.map(({ label, detail, passed }) => ({
+          label,
+          detail,
+          passed
+        }))
+      }
+    ]
+  })
 }

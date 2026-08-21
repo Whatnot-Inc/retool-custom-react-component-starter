@@ -50,6 +50,42 @@ describe('BrandVerificationReviewDashboardView', () => {
     })
   })
 
+  it('keeps the detail panel within the active queue filter', () => {
+    render(
+      <BrandVerificationReviewDashboardView
+        allowedReviewer
+        applications={sampleApplications}
+        onDecision={jest.fn()}
+      />
+    )
+
+    fireEvent.change(screen.getByRole('searchbox'), {
+      target: { value: 'Northstar' }
+    })
+
+    expect(screen.getByText('Northstar Coffee Company LLC')).toBeInTheDocument()
+    expect(screen.queryByText('Aurora Skin Labs, Inc.')).not.toBeInTheDocument()
+  })
+
+  it('closes the decision dialog with Escape', () => {
+    render(
+      <BrandVerificationReviewDashboardView
+        allowedReviewer
+        applications={sampleApplications}
+        onDecision={jest.fn()}
+      />
+    )
+
+    const rejectButton = screen.getByRole('button', { name: 'Reject' })
+    rejectButton.focus()
+    fireEvent.click(rejectButton)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(rejectButton).toHaveFocus()
+  })
+
   it('does not render an unsafe public website as a link', () => {
     const unsafeApplications = [
       {
@@ -76,16 +112,19 @@ describe('BrandVerificationReviewDashboardView', () => {
 
 describe('readApplications', () => {
   it('accepts an authorized-query payload containing tax ID last four only', () => {
-    expect(readApplications({ items: sampleApplications })).toEqual(
-      sampleApplications
-    )
+    const applications = readApplications({ items: sampleApplications })
+
+    expect(applications).toEqual(sampleApplications)
+    expect(applications[0]).not.toBe(sampleApplications[0])
   })
 
   it('rejects records containing a full tax identifier', () => {
-    const { taxIdLastFour, ...business } = sampleApplications[0].business
     const applicationWithFullTaxId = {
       ...sampleApplications[0],
-      business: { ...business, taxId: `12-345${taxIdLastFour}` }
+      business: {
+        ...sampleApplications[0].business,
+        taxId: `12-345${sampleApplications[0].business.taxIdLastFour}`
+      }
     }
 
     expect(readApplications({ items: [applicationWithFullTaxId] })).toEqual([])
