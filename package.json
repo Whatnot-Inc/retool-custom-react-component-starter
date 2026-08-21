@@ -8,9 +8,10 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "login": "npx @tryretool/custom-component-support login",
-    "sync": "npx @tryretool/custom-component-support dev",
+    "dev": "npx @tryretool/custom-component-support dev",
     "deploy": "npx @tryretool/custom-component-support deploy",
-    "init": "npx @tryretool/custom-component-support init"
+    "init": "npx @tryretool/custom-component-support init",
+    "sync": "npx @tryretool/custom-component-support sync"
   },
   "keywords": [
     "retool",

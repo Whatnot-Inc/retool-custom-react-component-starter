@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'
 
-type SerializableType = string | number | boolean | null | SerializableObject | SerializableArray;
+type SerializableType =
+  | string
+  | number
+  | boolean
+  | null
+  | SerializableObject
+  | SerializableArray
 
 interface SerializableObject {
-  [key: string]: SerializableType;
+  [key: string]: SerializableType
 }
 
-type SerializableArray = Array<SerializableType>;
+type SerializableArray = Array<SerializableType>
 
 export const Retool = {
   /**
@@ -14,15 +20,18 @@ export const Retool = {
    */
   useStateBoolean: ({
     name,
-    initialValue = false,
+    initialValue = false
   }: {
-    name: string;
-    initialValue?: boolean;
-    label?: string;
-    description?: string;
-    inspector?: 'text' | 'checkbox' | 'hidden';
+    name: string
+    initialValue?: boolean
+    label?: string
+    description?: string
+    inspector?: 'text' | 'checkbox' | 'hidden'
   }) => {
-    return useState<boolean>(initialValue) as readonly [boolean, (newValue: boolean) => void];
+    return useState<boolean>(initialValue) as readonly [
+      boolean,
+      (newValue: boolean) => void
+    ]
   },
 
   /**
@@ -30,15 +39,18 @@ export const Retool = {
    */
   useStateNumber: ({
     name,
-    initialValue = 0,
+    initialValue = 0
   }: {
-    name: string;
-    initialValue?: number;
-    label?: string;
-    description?: string;
-    inspector?: 'text' | 'hidden';
+    name: string
+    initialValue?: number
+    label?: string
+    description?: string
+    inspector?: 'text' | 'hidden'
   }) => {
-    return useState<number>(initialValue) as readonly [number, (newValue: number) => void];
+    return useState<number>(initialValue) as readonly [
+      number,
+      (newValue: number) => void
+    ]
   },
 
   /**
@@ -46,15 +58,18 @@ export const Retool = {
    */
   useStateString: ({
     name,
-    initialValue = '',
+    initialValue = ''
   }: {
-    name: string;
-    initialValue?: string;
-    label?: string;
-    description?: string;
-    inspector?: 'text' | 'hidden';
+    name: string
+    initialValue?: string
+    label?: string
+    description?: string
+    inspector?: 'text' | 'hidden'
   }) => {
-    return useState<string>(initialValue) as readonly [string, (newValue: string) => void];
+    return useState<string>(initialValue) as readonly [
+      string,
+      (newValue: string) => void
+    ]
   },
 
   /**
@@ -63,21 +78,24 @@ export const Retool = {
   useStateEnumeration: <T extends string[]>({
     name,
     enumDefinition,
-    initialValue,
+    initialValue
   }: {
-    name: string;
-    initialValue?: T[number];
-    enumDefinition: T;
+    name: string
+    initialValue?: T[number]
+    enumDefinition: T
     enumLabels?: {
-      [K in T[number]]: string;
-    };
-    inspector?: 'segmented' | 'select' | 'hidden';
-    description?: string;
-    label?: string;
+      [K in T[number]]: string
+    }
+    inspector?: 'segmented' | 'select' | 'hidden'
+    description?: string
+    label?: string
   }) => {
     // Use the first value as default if initialValue is not provided
-    const defaultValue = initialValue || enumDefinition[0];
-    return useState<T[number]>(defaultValue) as readonly [T[number], (newValue: T[number]) => void];
+    const defaultValue = initialValue || enumDefinition[0]
+    return useState<T[number]>(defaultValue) as readonly [
+      T[number],
+      (newValue: T[number]) => void
+    ]
   },
 
   /**
@@ -85,15 +103,18 @@ export const Retool = {
    */
   useStateObject: ({
     name,
-    initialValue = {},
+    initialValue = {}
   }: {
-    name: string;
-    initialValue?: SerializableObject;
-    inspector?: 'text' | 'hidden';
-    description?: string;
-    label?: string;
+    name: string
+    initialValue?: SerializableObject
+    inspector?: 'text' | 'hidden'
+    description?: string
+    label?: string
   }) => {
-    return useState<SerializableObject>(initialValue) as readonly [SerializableObject, (newValue: SerializableObject) => void];
+    return useState<SerializableObject>(initialValue) as readonly [
+      SerializableObject,
+      (newValue: SerializableObject) => void
+    ]
   },
 
   /**
@@ -101,15 +122,18 @@ export const Retool = {
    */
   useStateArray: ({
     name,
-    initialValue = [],
+    initialValue = []
   }: {
-    name: string;
-    initialValue?: SerializableArray;
-    inspector?: 'text' | 'hidden';
-    description?: string;
-    label?: string;
+    name: string
+    initialValue?: SerializableArray
+    inspector?: 'text' | 'hidden'
+    description?: string
+    label?: string
   }) => {
-    return useState<SerializableArray>(initialValue) as readonly [SerializableArray, (newValue: SerializableArray) => void];
+    return useState<SerializableArray>(initialValue) as readonly [
+      SerializableArray,
+      (newValue: SerializableArray) => void
+    ]
   },
 
   /**
@@ -117,8 +141,8 @@ export const Retool = {
    */
   useEventCallback: ({ name }: { name: string }) => {
     return () => {
-      console.log(`Event callback "${name}" triggered`);
-    };
+      console.log(`Event callback "${name}" triggered`)
+    }
   },
 
   /**
@@ -126,12 +150,12 @@ export const Retool = {
    */
   useComponentSettings: ({
     defaultWidth,
-    defaultHeight,
+    defaultHeight
   }: {
-    defaultWidth?: number;
-    defaultHeight?: number;
+    defaultWidth?: number
+    defaultHeight?: number
   }) => {
     // This is a no-op in the mock implementation
-    return;
+    return
   }
-}; 
+}

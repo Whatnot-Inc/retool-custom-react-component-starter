@@ -1,5 +1,7 @@
 # Brand Verification Review Dashboard
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A Retool custom component for restricted, manual review of brand verification
 applications. The component is backend-agnostic: Retool provides application
 records through a query binding, then handles approve and reject events with
@@ -72,3 +74,8 @@ Initialize the library once with `npm run init`, selecting the staging Admin2
 instance, then use `npm run deploy`. In Retool, bind `applicationData`,
 `allowedReviewer`, and both decision events before making the page available to
 reviewers.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for
+details.
