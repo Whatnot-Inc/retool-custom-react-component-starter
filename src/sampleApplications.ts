@@ -1,4 +1,4 @@
-import { BrandVerificationApplication } from './BrandVerificationReviewDashboard'
+import { BrandVerificationApplication } from './brandVerificationModel'
 
 export const sampleApplications: BrandVerificationApplication[] = [
   {
@@ -7,7 +7,7 @@ export const sampleApplications: BrandVerificationApplication[] = [
     business: {
       brandName: 'Aurora Skin', legalBusinessName: 'Aurora Skin Labs, Inc.',
       legalAddress: '620 Mateo Street, Los Angeles, CA 90021',
-      website: 'https://auroraskin.example', taxId: '12-3456789',
+      website: 'https://auroraskin.example', taxIdLastFour: '6789',
       trademarkNumber: 'US 7,184,322', annualRevenue: '$1M – $5M'
     },
     eligibility: [
@@ -23,7 +23,7 @@ export const sampleApplications: BrandVerificationApplication[] = [
     business: {
       brandName: 'Northstar Coffee', legalBusinessName: 'Northstar Coffee Company LLC',
       legalAddress: '1436 NW Flanders Street, Portland, OR 97209',
-      website: 'https://northstarcoffee.example', taxId: '93-1284420',
+      website: 'https://northstarcoffee.example', taxIdLastFour: '4420',
       trademarkNumber: 'US 6,920,184', annualRevenue: '$500K – $1M'
     },
     eligibility: [
@@ -39,7 +39,7 @@ export const sampleApplications: BrandVerificationApplication[] = [
     business: {
       brandName: 'Forge & Field', legalBusinessName: 'Forge and Field Goods, Inc.',
       legalAddress: '88 Commercial Street, Brooklyn, NY 11222',
-      website: 'https://forgeandfield.example', taxId: '82-3419055',
+      website: 'https://forgeandfield.example', taxIdLastFour: '9055',
       trademarkNumber: 'US 7,042,901', annualRevenue: '$5M – $10M'
     },
     eligibility: [
@@ -55,7 +55,7 @@ export const sampleApplications: BrandVerificationApplication[] = [
     business: {
       brandName: 'River Trading Co.', legalBusinessName: 'River Trading Company LLC',
       legalAddress: '410 River Road, Austin, TX 78701',
-      website: 'https://rivertrading.example', taxId: '74-3321844',
+      website: 'https://rivertrading.example', taxIdLastFour: '1844',
       trademarkNumber: 'Pending', annualRevenue: 'Under $500K'
     },
     eligibility: [

@@ -1,43 +1,11 @@
 import React, { FC, useMemo, useState } from 'react'
 
 import './MyRetoolComponent.css'
-
-export type ApplicationStatus = 'pending' | 'approved' | 'rejected'
-
-export type EligibilitySignal = {
-  label: string
-  detail: string
-  passed: boolean
-}
-
-export type BrandVerificationApplication = {
-  id: string
-  status: ApplicationStatus
-  submittedAt: string
-  seller: {
-    userId: string
-    username: string
-    avatarUrl?: string
-    aggregateRating: number
-    activeSevereViolations: number
-  }
-  business: {
-    brandName: string
-    legalBusinessName: string
-    legalAddress: string
-    website: string
-    taxId: string
-    trademarkNumber: string
-    annualRevenue: string
-  }
-  eligibility: EligibilitySignal[]
-}
-
-export type ReviewDecision = {
-  applicationId: string
-  decision: 'approve' | 'reject'
-  reason: string
-}
+import {
+  ApplicationStatus,
+  BrandVerificationApplication,
+  ReviewDecision
+} from './brandVerificationModel'
 
 type DashboardProps = {
   applications: BrandVerificationApplication[]
@@ -51,17 +19,28 @@ const statusLabels: Record<ApplicationStatus, string> = {
   rejected: 'Rejected'
 }
 
-const maskTaxId = (taxId: string): string => {
-  const visible = taxId.replace(/\D/g, '').slice(-4)
-  return visible ? `••-•••${visible}` : 'Not provided'
+const formatMaskedTaxId = (taxIdLastFour: string): string =>
+  /^\d{4}$/.test(taxIdLastFour) ? `••-•••${taxIdLastFour}` : 'Not provided'
+
+const safeExternalUrl = (value: string): string | null => {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? value : null
+  } catch {
+    return null
+  }
 }
 
-const formatSubmittedAt = (submittedAt: string): string =>
-  new Intl.DateTimeFormat('en-US', {
+const formatSubmittedAt = (submittedAt: string): string => {
+  const date = new Date(submittedAt)
+  if (Number.isNaN(date.getTime())) return 'Invalid date'
+
+  return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
-  }).format(new Date(submittedAt))
+  }).format(date)
+}
 
 const StatusBadge: FC<{ status: ApplicationStatus }> = ({ status }) => (
   <span className={`status-badge status-badge--${status}`}>
@@ -121,6 +100,9 @@ export const BrandVerificationReviewDashboardView: FC<DashboardProps> = ({
     applications.find(({ id }) => id === selectedId) ??
     filteredApplications[0] ??
     applications[0]
+  const selectedWebsiteUrl = selectedApplication
+    ? safeExternalUrl(selectedApplication.business.website)
+    : null
 
   const selectStatus = (status: ApplicationStatus): void => {
     setStatusFilter(status)
@@ -312,17 +294,18 @@ export const BrandVerificationReviewDashboardView: FC<DashboardProps> = ({
                   <div>
                     <dt>Public brand website</dt>
                     <dd>
-                      <a
-                        href={selectedApplication.business.website}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        {selectedApplication.business.website.replace(
-                          /^https?:\/\//,
-                          ''
-                        )}
-                        <span aria-hidden="true"> ↗</span>
-                      </a>
+                      {selectedWebsiteUrl ? (
+                        <a
+                          href={selectedWebsiteUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {selectedWebsiteUrl.replace(/^https?:\/\//, '')}
+                          <span aria-hidden="true"> ↗</span>
+                        </a>
+                      ) : (
+                        'Not provided'
+                      )}
                     </dd>
                   </div>
                   <div>
@@ -345,7 +328,11 @@ export const BrandVerificationReviewDashboardView: FC<DashboardProps> = ({
                 <dl className="record-list">
                   <div>
                     <dt>EIN / TIN</dt>
-                    <dd>{maskTaxId(selectedApplication.business.taxId)}</dd>
+                    <dd>
+                      {formatMaskedTaxId(
+                        selectedApplication.business.taxIdLastFour
+                      )}
+                    </dd>
                   </div>
                   <div>
                     <dt>Trademark number</dt>

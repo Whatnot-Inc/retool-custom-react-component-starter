@@ -26,7 +26,7 @@ type BrandVerificationApplication = {
     legalBusinessName: string
     legalAddress: string
     website: string
-    taxId: string
+    taxIdLastFour: string
     trademarkNumber: string
     annualRevenue: string
   }
@@ -35,7 +35,10 @@ type BrandVerificationApplication = {
 ```
 
 Bind `allowedReviewer` to the Retool page permission check. When false, the
-component renders no applicant, KYB, tax, or trademark details.
+component renders no applicant, KYB, tax, or trademark details. This client-side
+check is defense in depth, not an authorization boundary. The query that
+provides `applicationData` and both decision mutations must independently
+enforce reviewer authorization.
 
 The component exposes `approve` and `reject` events. Before either event fires,
 `decisionRequest` is set to:
@@ -49,7 +52,9 @@ The component exposes `approve` and `reject` events. Before either event fires,
 ```
 
 Wire each event to the corresponding authenticated Admin2 mutation. A rejection
-requires a reason. Tax identifiers are masked in the review UI.
+requires a reason. The query must return only the final four digits of a tax
+identifier as `taxIdLastFour`; a full EIN or TIN must never enter Retool
+component state or the browser.
 
 ## Development
 

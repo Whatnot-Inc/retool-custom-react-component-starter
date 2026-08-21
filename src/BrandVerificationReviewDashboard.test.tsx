@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
 import { BrandVerificationReviewDashboardView } from './BrandVerificationReviewDashboard'
+import { readApplications } from './brandVerificationModel'
 import { sampleApplications } from './sampleApplications'
 
 describe('BrandVerificationReviewDashboardView', () => {
@@ -47,5 +48,64 @@ describe('BrandVerificationReviewDashboardView', () => {
       applicationId: 'bva_1042', decision: 'reject',
       reason: 'Trademark ownership could not be verified.'
     })
+  })
+
+  it('does not render an unsafe public website as a link', () => {
+    const unsafeApplications = [
+      {
+        ...sampleApplications[0],
+        business: {
+          ...sampleApplications[0].business,
+          website: 'javascript:alert(1)'
+        }
+      }
+    ]
+
+    render(
+      <BrandVerificationReviewDashboardView
+        allowedReviewer
+        applications={unsafeApplications}
+        onDecision={jest.fn()}
+      />
+    )
+
+    expect(screen.getByText('Not provided')).toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  })
+})
+
+describe('readApplications', () => {
+  it('accepts an authorized-query payload containing tax ID last four only', () => {
+    expect(readApplications({ items: sampleApplications })).toEqual(
+      sampleApplications
+    )
+  })
+
+  it('rejects records containing a full tax identifier', () => {
+    const { taxIdLastFour, ...business } = sampleApplications[0].business
+    const applicationWithFullTaxId = {
+      ...sampleApplications[0],
+      business: { ...business, taxId: `12-345${taxIdLastFour}` }
+    }
+
+    expect(readApplications({ items: [applicationWithFullTaxId] })).toEqual([])
+  })
+
+  it('rejects malformed timestamps and unsafe public websites', () => {
+    const malformedApplications = [
+      {
+        ...sampleApplications[0],
+        submittedAt: 'not-a-date'
+      },
+      {
+        ...sampleApplications[0],
+        business: {
+          ...sampleApplications[0].business,
+          website: 'javascript:alert(1)'
+        }
+      }
+    ]
+
+    expect(readApplications({ items: malformedApplications })).toEqual([])
   })
 })
